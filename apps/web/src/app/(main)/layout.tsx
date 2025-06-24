@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/navigation-menu"
 import { createClient } from "@/utils/supabase/server"
 import Link from "next/link"
-import UserMenu from "./_components/user-menu"
+import UserMenu from "@/components/user-menu"
 
 function LoginLinks() {
   return (
@@ -39,7 +39,7 @@ async function Header() {
   return (
     <header className="flex items-center justify-between p-4">
       <h1 className="text-xl font-bold">
-        <Link href="/">Chaptr</Link>
+        <Link href="/">readr</Link>
       </h1>
       <div>{user ?  <UserMenu email={user?.email} /> : <LoginLinks />}</div>
     </header>

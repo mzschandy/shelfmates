@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import BookClub from "./_components/book-club"
+import BookClub from "@/components/book-club"
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 
