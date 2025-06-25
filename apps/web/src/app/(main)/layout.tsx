@@ -28,6 +28,20 @@ function LoginLinks() {
   )
 }
 
+function NavMenu() {
+  return (
+    <NavigationMenu>
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <NavigationMenuLink asChild>
+                <Link href="/browse">Browse</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
+  )
+}
+
 async function Header() {
     const supabase = await createClient()
 
@@ -41,6 +55,9 @@ async function Header() {
       <h1 className="text-xl font-bold">
         <Link href="/">readr</Link>
       </h1>
+      <div>
+        <NavMenu />
+      </div>
       <div>{user ?  <UserMenu email={user?.email} /> : <LoginLinks />}</div>
     </header>
   )
