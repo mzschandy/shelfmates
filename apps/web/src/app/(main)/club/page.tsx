@@ -1,10 +1,12 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function ClubPage() {
   return (
     <div className="p-8">
+
       <div className="">
         <div className="flex justify-between">
           <h1 className="text-3xl">Example Club</h1>
@@ -62,7 +64,7 @@ export default function ClubPage() {
               <div className="w-1/3 bg-amber-900">
               <div className="h-48 bg-blue-500 mock-image"></div></div>
               <div className="w-2/3 bg-amber-500">
-                <div className="border border-red-400 bg-red-400 rounded-2xl  w-max pl-1 pr-1 pt-0.5 pb-0.5 text-sm">Currently reading</div>
+                <Badge className="">Currently reading</Badge>
                 <div className="">Book Name</div>
                 <div className="">Author</div>
                 <div>Started xx/xx/xxxx</div>
