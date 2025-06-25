@@ -5,10 +5,8 @@ import { redirect } from "next/navigation"
 
 export default async function Browse() {
   const supabase = await createClient()
-  // const { data, error } = await supabase.auth.getUser()
-  // if (error || !data?.user) {
-  //   redirect("/login")
-  // }
+  const { data, error } = await supabase.auth.getUser()
+
 
   // console.log("User data:", data.user);
 
@@ -18,7 +16,8 @@ export default async function Browse() {
         {/* <div><p>Hello {data.user.email}</p></div> */}
         <div className="flex justify-between">
           <h1 className="text-2xl font-bold mb-4">Book Clubs</h1>
-          <Button>Create Book Club</Button>
+          {data.user ? <Button>Create Book Club</Button>
+: null}
         </div>
         <div className="grid grid-cols-4 gap-4 h-auto">
           <BookClub />
