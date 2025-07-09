@@ -28,11 +28,30 @@ export async function signup(formData: FormData) {
 
   const email = formData.get("email") as string
   const password = formData.get("password") as string
+  const username = formData.get("username") as string
 
-  const { error } = await supabase.auth.signUp({ email, password })
+  console.log("Signing up with email:", email)
+  console.log("Signing up with username:", username)
+  console.log("Signing up with password:", password)
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        username,
+      },
+    },
+  })
+
 
   if (error) {
+    console.log('error signing up:', error)
+    console.log('data:', data)
     redirect("/error")
+  } else {
+    console.log('data:', data)
+    console.log("User signed up successfully")
   }
 
   revalidatePath("/", "layout")
@@ -44,5 +63,5 @@ export async function logout() {
 
   await supabase.auth.signOut()
 
-  redirect("/login")
+  redirect("/")
 }

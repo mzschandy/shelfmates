@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get('next') ?? '/browse'
 
   if (token_hash && type) {
+    console.log('Verifying OTP with token hash:', token_hash, 'and type:', type);
     const supabase = await createClient()
 
     const { error } = await supabase.auth.verifyOtp({
@@ -18,11 +19,14 @@ export async function GET(request: NextRequest) {
       token_hash,
     })
     if (!error) {
+      console.log('OTP verification successful, redirecting to:', next)
       // redirect user to specified redirect URL or root of app
       redirect(next)
     }
+    console.log('has token hash and type, but error:', error)
   }
 
+  console.log('No token hash or type provided, or verification failed')
   // redirect the user to an error page with some instructions
   redirect('/error')
 }

@@ -1,6 +1,3 @@
-"use client"
-
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -8,11 +5,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { login, signup } from "./actions"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Login from "@/components/auth/login"
+import SignUp from "@/components/auth/sign-up"
 
-export default function Login() {
+export default function AuthPage() {
   return (
     <div className="flex justify-center height-screen-helper">
       <div className="w-sm m-auto">
@@ -24,30 +21,18 @@ export default function Login() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  name="email"
-                  placeholder="name@example.com"
-                />
-              </div>
-              <div className="grid gap-2 mt-5">
-                <Label htmlFor="email">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="password"
-                />
-              </div>
-              <div className="flex flex-col gap-2 mt-5">
-                <Button formAction={login}>Log In</Button>
-                <Button formAction={signup}>Sign Up</Button>
-              </div>
-            </form>
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="w-full">
+                <TabsTrigger value="login" >Log In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
+              <TabsContent value="login">
+                <Login />
+              </TabsContent>
+              <TabsContent value="signup">
+                <SignUp />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>

@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/navigation-menu"
 import { createClient } from "@/utils/supabase/server"
 import Link from "next/link"
-import UserMenu from "@/components/user-menu"
+import UserMenu from "@/components/header/user-menu"
 
 function LoginLinks() {
   return (
