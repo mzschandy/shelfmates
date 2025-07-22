@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@shelfmates/web",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -18,7 +18,7 @@
     "@radix-ui/react-navigation-menu": "^1.2.13",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.12",
-    "@readr/ui": "*",
+    "@shelfmates/ui": "*",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.1",
@@ -36,8 +36,8 @@
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
-    "@readr/eslint-config": "*",
-    "@readr/typescript-config": "*",
+    "@shelfmates/eslint-config": "*",
+    "@shelfmates/typescript-config": "*",
     "@tailwindcss/postcss": "^4.1.10",
     "@tanstack/eslint-plugin-query": "^5.81.2",
     "@tanstack/react-query-devtools": "^5.81.2",

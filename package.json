@@ -1,5 +1,5 @@
 {
-  "name": "readr",
+  "name": "shelfmates",
   "private": true,
   "scripts": {
     "build": "turbo run build",

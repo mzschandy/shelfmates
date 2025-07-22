@@ -1,5 +1,5 @@
 {
-  "name": "@readr/db",
+  "name": "@shelfmates/db",
   "version": "0.1.0",
   "private": true,
   "dependencies": {

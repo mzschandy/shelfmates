@@ -1,5 +1,5 @@
 {
-  "extends": "@readr/typescript-config/nextjs.json",
+  "extends": "@shelfmates/typescript-config/nextjs.json",
   "compilerOptions": {
     "plugins": [
       {
@@ -21,3 +21,4 @@
     "node_modules"
   ]
 }
+//@shelfmates/typescript-config/nextjs.json
