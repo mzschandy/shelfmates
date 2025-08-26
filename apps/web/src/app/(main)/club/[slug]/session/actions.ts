@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server"
 import axios from "axios"
 import epub from "epubjs"
+import { revalidatePath } from "next/cache"
 
 export async function createSession(formData: FormData) {
   "use server"
@@ -13,16 +14,6 @@ export async function createSession(formData: FormData) {
     console.log("Greeting from server:", greeting.data)
   }
 
-  // const epubFile = formData.get("book") as File
-  // if (!epubFile) {
-  //   console.error("No epub file found in formData")
-  //   return { error: "Epub file is required" }
-  // }
-
-  // const newBook = epub(epubFile.name)
-  // await newBook.opened // Wait for the book to be opened
-  // console.log("Creating new book instance:", newBook.loaded.metadata)
-
   const sesTest = await axios.post(
     "http://localhost:8787/sessions/create-session",
     formData
@@ -30,4 +21,24 @@ export async function createSession(formData: FormData) {
   if (sesTest) {
     console.log("Session test response:", sesTest.data)
   }
+}
+
+export async function joinClub(formData: FormData) {
+  "use server"
+
+  const supabase = await createClient();
+  const userId = formData.get("user_id") as string
+  const clubId = formData.get("club_id") as string
+
+  const { data, error } = await supabase
+    .from("club_members")
+    .insert({ user_id: userId, club_id: clubId, is_admin: false }).select()
+
+  if (error) {
+    console.log("Error joining club:", error)
+  }
+
+  console.log("Successfully joined club:", data)
+
+  revalidatePath(`/club/${clubId}`)
 }
