@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model books {
+  title                            String
+  author                           String?
+  description                      String?
+  bookCoverUrl                     String?     @map("book_cover_url")
+  filePath                         String?     @map("file_path")
+  rating                           Float?      @db.Real
+  createdAt                        DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId                        String      @map("session_id") @db.Uuid
+  uploadedBy                       String      @map("uploaded_by") @db.Uuid
+  sessionsBooksSessionIdToSessions sessions    @relation("books_session_idTosessions", fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  clubMembers                      clubMembers @relation(fields: [uploadedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sessionsSessionsBookIdToBooks    sessions[]  @relation("sessions_book_idTobooks")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model clubMembers {
+  profileId String?    @map("profile_id") @db.Uuid
+  isAdmin   Boolean    @default(false) @map("is_admin")
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clubId    String?    @map("club_id") @db.Uuid
+  books     books[]
+  clubs     clubs?     @relation(fields: [clubId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles  profiles?  @relation(fields: [profileId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  comments  comments[]
+
+  @@map("club_members")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model clubs {
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  title       String
+  description String?
+  isPublic    Boolean       @default(false) @map("is_public")
+  creatorId   String        @map("creator_id") @db.Uuid
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  threadId    String[]      @map("thread_id") @db.Uuid
+  clubMembers clubMembers[]
+  profiles    profiles      @relation(fields: [creatorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubs_creator_id_fkey1")
+  sessions    sessions[]
+  threads     threads[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model comments {
+  commentText  String      @map("comment_text")
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime?   @default(now()) @map("updated_at") @db.Timestamp(6)
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clubMemberId String      @map("club_member_id") @db.Uuid
+  sessionId    String?     @map("session_id") @db.Uuid
+  threadId     String      @map("thread_id") @db.Uuid
+  parentId     String?     @map("parent_id") @db.Uuid
+  depth        Int         @default(0)
+  clubMembers  clubMembers @relation(fields: [clubMemberId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sessions     sessions?   @relation(fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  threads      threads     @relation(fields: [threadId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_thread_id")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model profiles {
+  username    String?       @unique
+  avatarUrl   String?       @map("avatar_url")
+  id          String        @id @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  email       String?       @db.VarChar
+  clubMembers clubMembers[]
+  clubs       clubs[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sessions {
+  title                         String
+  isActive                      Boolean    @default(true) @map("is_active")
+  createdAt                     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookId                        String?    @map("book_id") @db.Uuid
+  clubId                        String     @map("club_id") @db.Uuid
+  booksBooksSessionIdToSessions books[]    @relation("books_session_idTosessions")
+  comments                      comments[]
+  booksSessionsBookIdToBooks    books?     @relation("sessions_book_idTobooks", fields: [bookId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  clubs                         clubs      @relation(fields: [clubId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  threads                       threads[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model threads {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String     @db.VarChar
+  description String?    @db.VarChar
+  isLocked    Boolean?   @default(false) @map("is_locked")
+  clubId      String?    @map("club_id") @db.Uuid
+  sessionId   String?    @map("session_id") @db.Uuid
+  type        threadtype
+  createdAt   DateTime?  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime?  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  comments    comments[]
+  clubs       clubs?     @relation(fields: [clubId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_club_id")
+  sessions    sessions?  @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_session_id")
+}
+
+enum threadtype {
+  GENERAL
+  SESSION
+}
