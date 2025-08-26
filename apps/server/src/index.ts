@@ -1,18 +1,20 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
-import sessionsRouter from './routes/sessions/index.js';
+import sessionRouter from './routes/sessions/index.js';
+import clubRouter from './routes/clubs/index.js';
 
-const app = new Hono();
+const api = new Hono().basePath('/api');
 
-app.get('/', (c) => {
+api.get('/', (c) => {
   return c.text('Hello Hono!');
 });
 
-app.route('/sessions', sessionsRouter)
+api.route('/sessions', sessionRouter);
+api.route('/clubs', clubRouter);
 
 serve(
   {
-    fetch: app.fetch,
+    fetch: api.fetch,
     port: 8787,
   },
   (info) => {
