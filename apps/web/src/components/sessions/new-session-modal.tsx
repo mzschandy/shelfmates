@@ -13,7 +13,7 @@ import { Label } from "../ui/label"
 import { Button } from "../ui/button"
 import { createSession } from "@/app/(main)/club/[slug]/session/actions"
 
-export default function NewSessionModal() {
+export default function NewSessionModal({clubId, clubMemberId = ''}: {clubId: string, clubMemberId?: string}) {
   // console.log("NewSessionModal user:", user)
 
   return (
@@ -31,6 +31,7 @@ export default function NewSessionModal() {
               <div className="mt-4 mb-4">
                 <form>
                   {/* <input type="hidden" name="userId" value={user?.id} /> */}
+                  <input type="hidden" name="club_id" value="club_id" />
                   <div className="grid gap-2">
                     <label htmlFor="title">Upload a Book</label>
                     <Input id="book" name="book" type="file" required />
