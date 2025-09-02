@@ -2,6 +2,7 @@
   "name": "@shelfmates/db",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --skip-generate",
@@ -10,9 +11,11 @@
   "exports": {
     ".": "./index.ts"
   },
+  "types": "./index.ts",
   "dependencies": {
     "@prisma/client": "^6.10.1"
   },
+  "main": "./index.ts",
   "devDependencies": {
     "@types/node": "^22.15.33",
     "prisma": "^6.10.1",

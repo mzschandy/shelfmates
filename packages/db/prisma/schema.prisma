@@ -20,6 +20,8 @@ model Book {
   id                              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sessionId                       String     @map("session_id") @db.Uuid
   uploadedBy                      String     @map("uploaded_by") @db.Uuid
+  clubId                          String     @map("club_id") @db.Uuid
+  club                            Club       @relation(fields: [clubId], references: [id], onDelete: Cascade)
   sessionsBooksSessionIdToSession Session    @relation("books_session_idTosessions", fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   clubMember                      ClubMember @relation(fields: [uploadedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   sessionsSessionsBookIdToBooks   Session[]  @relation("sessions_book_idTobooks")
@@ -32,10 +34,11 @@ model ClubMember {
   isAdmin   Boolean   @default(false) @map("is_admin")
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clubId    String?   @map("club_id") @db.Uuid
+  clubId    String    @map("club_id") @db.Uuid
+  profileId String    @map("profile_id") @db.Uuid
   books     Book[]
-  club      Club?     @relation(fields: [clubId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  profile   Profile   @relation(fields: [id], references: [id], onDelete: Cascade)
+  club      Club      @relation(fields: [clubId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   comments  Comment[]
 
   @@map("club_members")
@@ -50,8 +53,10 @@ model Club {
   creatorId      String       @map("creator_id") @db.Uuid
   id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   threadId       String[]     @map("thread_id") @db.Uuid
+  books          Book[]
   clubMembers    ClubMember[]
   creatorProfile Profile      @relation(fields: [creatorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubs_creator_id_fkey1")
+  comments       Comment[]
   sessions       Session[]
   threads        Thread[]
 
@@ -69,6 +74,8 @@ model Comment {
   threadId     String     @map("thread_id") @db.Uuid
   parentId     String?    @map("parent_id") @db.Uuid
   depth        Int        @default(0)
+  clubId       String     @map("club_id") @db.Uuid
+  club         Club       @relation(fields: [clubId], references: [id], onDelete: Cascade)
   clubMember   ClubMember @relation(fields: [clubMemberId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   session      Session?   @relation(fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   thread       Thread     @relation(fields: [threadId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_thread_id")
@@ -78,13 +85,13 @@ model Comment {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Profile {
-  username   String?     @unique
-  avatarUrl  String?     @map("avatar_url")
-  id         String      @id @db.Uuid
-  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  email      String?     @db.VarChar
-  clubMember ClubMember?
-  clubs      Club[]
+  username    String?      @unique
+  avatarUrl   String?      @map("avatar_url")
+  id          String       @id @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  email       String?      @db.VarChar
+  clubMembers ClubMember[]
+  clubs       Club[]
 
   @@map("profiles")
 }
