@@ -5,6 +5,27 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { createClient } from "@/utils/supabase/server"
+import NewSessionModal from "@/components/sessions/new-session-modal"
+import { joinClub } from "./session/actions"
+import { checkAuthPermissions, getClubData, getLoggedInUser, getUserByUserId } from "@/lib/data"
+
+interface ClubMember {
+  id: string
+  clubId: string
+  clubIdOld: number
+  createdAt: string
+  isAdmin: boolean
+}
+
+interface ClubData {
+  createdAt: string
+  creatorId: string
+  description: string
+  id: string
+  idOld: string
+  isPublic: string
+  title: string
+}
 
 function ThreadsLister() {
   return (
@@ -52,20 +73,31 @@ export default async function ClubPage({
 }) {
   const supabase = await createClient()
   const { slug } = await params
-  const { data, error } = await supabase.auth.getUser()
-  const { data: clubData, error: clubError } = await supabase
-    .from("clubs")
-    .select("*")
-    .eq("id", slug)
-    .limit(1)
-    .single()
-  console.log("Club data:", clubData)
+  const { isLoggedIn, isMember, isAdmin } = await checkAuthPermissions(slug)
+    const clubData = await getClubData(slug);
+
+  console.log(
+    "auth check w/ prisma, isLoggedIn, isMember, isAdmin",
+    isLoggedIn,
+    isMember,
+    isAdmin
+  )
+
+  if (!clubData) {
+    return <div>Error fetching club data</div>
+  }
+  const creator = await getUserByUserId(clubData?.creatorId)
+  console.log('prisma club data', clubData);
+  console.log("prisma creator", creator ?? '')
+  const profile = await getLoggedInUser()
+  console.log("prisma profile", profile)
+
   return (
     <div className="p-8">
       <div className="">
         <div className="flex justify-between">
-          <h1 className="text-3xl">Example Club</h1>
-          {data.user ? <Button>Settings</Button> : null}
+          <h1 className="text-3xl">{clubData.title}</h1>
+          {isAdmin &&  <Button>Settings</Button>}
         </div>
         <div className="mt-2 flex justify-between">
           <div className="mt-4 flex align-middle">
@@ -74,20 +106,23 @@ export default async function ClubPage({
               <AvatarFallback>u</AvatarFallback>
             </Avatar>
             <div className="ml-0 mr-0 mt-auto mb-auto">
-              The club admin is username
+              The club admin is <b>{creator?.username}</b>
             </div>
           </div>
-          {data.user ? (
+          {!isMember && (
             <div>
-              <Button>Join Club</Button>
+              <form>
+                <input type="hidden" name="user_id" value={profile?.id} />
+                <input type="hidden" name="club_id" value={clubData.id} />
+                <Button formAction={joinClub} type="submit">
+                  Join Club
+                </Button>
+              </form>
             </div>
-          ) : null}
+          )}
         </div>
 
-        <div>
-          Club Description this is a description of the club it could really be
-          anything they want
-        </div>
+        <div>{clubData.description}</div>
         <div className="flex">
           <AvatarList />
           <div className="ml-2 self-center">
@@ -98,23 +133,27 @@ export default async function ClubPage({
       </div>
       <div className="mt-4 mb-4 flex justify-between">
         <div className="text-xl">Sessions</div>
-        {data.user ? <Button>Create New Session</Button> : null}
+        {isAdmin && (
+          <NewSessionModal clubId={clubData.id} />
+        )}
       </div>
-      <div className="grid grid-cols-4 gap-4 cursor-pointer">
-        {data.user ? (
-          <div className="border border-gray-600 rounded-sm bg-gray-400">
-            <div className="flex flex-col items-center justify-center mt-0 mb-0 ml-auto mr-auto h-full">
-              <Button>+</Button>
-              <div>Add a session</div>
-            </div>
-          </div>
-        ) : null}
-        <Session isActive={true} />
-        <Session />
-        <Session />
-      </div>
+      {clubData.sessions.length === 0 ? (
+        <div className="w-full h-24 border border-gray-600 rounded-sm">
+          <div>No sessions</div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 gap-4 cursor-pointer">
+          {clubData.sessions.map((session) => (
+            <Session
+              session={session}
+              key={session.id}
+              isActive={session.isActive}
+            />
+          ))}
+        </div>
+      )}
       <div className="mt-4">
-        {data.user ? (
+        {isLoggedIn && isMember ? (
           <ThreadsLister />
         ) : (
           <div className="border rounded-sm border-gray-300 p-4">
