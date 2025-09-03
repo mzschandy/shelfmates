@@ -1,11 +1,9 @@
 import { Hono } from 'hono';
-import { serve } from '@hono/node-server';
-import { createClient } from '@supabase/supabase-js';
 import epubMetadata from 'epub-metadata';
 import { unlink, writeFile } from 'fs/promises';
 import tmp from 'tmp';
-import { createHonoClient } from '../../../utils/server.js';
 import type { EpubMetadata } from '@shelfmates/shared';
+import { prisma } from '@shelfmates/db';
 
 const app = new Hono();
 
@@ -21,9 +19,9 @@ const sessionRouter = app
   .post('/create-session', async (c) => {
     const formData = await c.req.formData();
     const epubFile = formData.get('book') as File;
-    const clubId = formData.get('club_id') as string;
-    const clubMemberId = formData.get('club_member_id') as string;
-    const supabase = await createHonoClient();
+    const clubId = formData.get('clubId') as string;
+    const clubMemberId = formData.get('clubMemberId') as string;
+
 
     if (!epubFile) {
       return c.json({ error: 'Epub file is required' }, 400);
@@ -31,53 +29,47 @@ const sessionRouter = app
 
     const bookMetadata = await extractMetadata(epubFile);
 
-    if (!bookMetadata) {
+    if (!bookMetadata || !bookMetadata.title) {
       return c.json({ error: 'Failed to extract metadata' }, 500);
     }
 
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('sessions')
-      .insert({
-        title: bookMetadata.title,
-        is_active: true,
-        club_id: clubId,
-      })
-      .select();
+    const updatedTtransaction = await prisma.$transaction(async (tx) => {
+      const newSession = await tx.session.create({
+        data: {
+          title: bookMetadata.title,
+          isActive: true,
+          clubId: clubId,
+        },
+      });
 
-    if (sessionError) {
-      console.error('Error creating session:', sessionError);
-      return c.json({ error: 'Failed to create session' }, 500);
-    }
+      const newBook = await tx.book.create({
+        data: {
+          title: bookMetadata.title,
+          author: bookMetadata.creator?.text || 'Unknown',
+          description: bookMetadata.description || '',
+          bookCoverUrl: bookMetadata.cover || '',
+          filePath: epubFile.name,
+          sessionId: newSession.id,
+          uploadedBy: clubMemberId,
+          clubId: clubId
+        },
+      });
 
-    const { data: bookData, error: bookError } = await supabase
-      .from('books')
-      .insert({
-        title: bookMetadata.title,
-        author: bookMetadata.creator?.text || 'Unknown',
-        description: bookMetadata.description || '',
-        book_cover_url: bookMetadata.cover || '',
-        file_path: epubFile.name,
-        session_id: sessionData[0].id,
-        uploaded_by: clubMemberId,
-      })
-      .select();
+      const updatedSession = await tx.session.update({
+        where: {
+          id: newSession.id,
+        },
+        data: {
+          bookId: newBook.id,
+        },
+      });
 
-    if (bookError) {
-      console.error('Error creating book:', bookError);
-      return c.json({ error: 'Failed to create book' }, 500);
-    }
+      return updatedSession;
+    });
 
-    const { data: updatedSessionData, error: updatedSessionError } =
-      await supabase
-        .from('sessions')
-        .update({ book_id: bookData[0].id })
-        .eq('id', sessionData[0].id)
-        .select();
+    console.log('updatedSessionData', updatedTtransaction);
 
-    if (updatedSessionError) {
-      console.error('Error updating sessino', updatedSessionError);
-      return c.json({ error: 'Failed to update session' }, 500);
-    }
+    return c.json({ sessionData: updatedTtransaction }, 201);
   });
 
 async function extractMetadata(epubFile: File) {
