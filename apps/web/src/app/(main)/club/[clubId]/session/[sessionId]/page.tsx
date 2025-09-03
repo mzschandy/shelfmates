@@ -9,7 +9,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 
-export default function SessionPage() {
+export default async function SessionPage({params}: {params: Promise<{sessionId: string}>}) {
+  const {sessionId} = await params
   return (
     <div className="p-8">
       <Breadcrumb className="mb-4">

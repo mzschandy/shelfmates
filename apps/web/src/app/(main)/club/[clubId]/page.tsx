@@ -1,10 +1,7 @@
 import Session from "@/components/sessions/session"
 import Thread from "@/components/comments/thread"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { createClient } from "@/utils/supabase/server"
 import NewSessionModal from "@/components/sessions/new-session-modal"
 import { joinClub } from "./session/actions"
 import { checkAuthPermissions, getClubData, getLoggedInUser, getUserByUserId } from "@/lib/data"
@@ -69,12 +66,11 @@ function AvatarList() {
 export default async function ClubPage({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ clubId: string }>
 }) {
-  const supabase = await createClient()
-  const { slug } = await params
-  const { isLoggedIn, isMember, isAdmin } = await checkAuthPermissions(slug)
-    const clubData = await getClubData(slug);
+  const { clubId } = await params
+  const { isLoggedIn, isMember, isAdmin } = await checkAuthPermissions(clubId)
+    const clubData = await getClubData(clubId);
 
   console.log(
     "auth check w/ prisma, isLoggedIn, isMember, isAdmin",
@@ -133,8 +129,8 @@ export default async function ClubPage({
       </div>
       <div className="mt-4 mb-4 flex justify-between">
         <div className="text-xl">Sessions</div>
-        {isAdmin && (
-          <NewSessionModal clubId={clubData.id} />
+        {isAdmin && profile && (
+          <NewSessionModal clubId={clubData.id} clubMemberId={profile?.id} />
         )}
       </div>
       {clubData.sessions.length === 0 ? (
@@ -146,6 +142,7 @@ export default async function ClubPage({
           {clubData.sessions.map((session) => (
             <Session
               session={session}
+              clubId={clubData.id}
               key={session.id}
               isActive={session.isActive}
             />

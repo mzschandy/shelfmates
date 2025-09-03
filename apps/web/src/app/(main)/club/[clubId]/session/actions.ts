@@ -2,25 +2,37 @@ import { createClient } from "@/utils/supabase/server"
 import axios from "axios"
 import epub from "epubjs"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
+
+export interface SessionData {
+  title: string,
+  isActive: boolean,
+  createdAt: string,
+  id: string,
+  bookId: string,
+  clubId: string
+}
 
 export async function createSession(formData: FormData) {
   "use server"
   console.log("create session action hit")
-  const supabase = await createClient()
-
   console.log("Creating session with formData:", formData)
-  const greeting = await axios.get("http://localhost:8787/sessions/sessions")
+  const clubId = formData.get("clubId") as string
+
+  const greeting = await axios.get("http://localhost:8787/api/sessions")
   if (greeting) {
     console.log("Greeting from server:", greeting.data)
   }
 
-  const sesTest = await axios.post(
-    "http://localhost:8787/sessions/create-session",
+  const {data} = await axios.post(
+    "http://localhost:8787/api/sessions/create-session",
     formData
   )
-  if (sesTest) {
-    console.log("Session test response:", sesTest.data)
+  if (data) {
+    console.log("Session test response:", data)
   }
+
+    redirect(`/club/${clubId}/session/${data.title}`)
 }
 
 export async function joinClub(formData: FormData) {
@@ -28,7 +40,7 @@ export async function joinClub(formData: FormData) {
 
   const supabase = await createClient();
   const userId = formData.get("user_id") as string
-  const clubId = formData.get("club_id") as string
+  const clubId = formData.get("clubId") as string
 
   const { data, error } = await supabase
     .from("club_members")
