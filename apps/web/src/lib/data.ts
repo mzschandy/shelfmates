@@ -11,7 +11,7 @@ export const getUserId = async () => {
   if (!user || userError) {
     return null
   }
-  console.log('getUserId user():', user.user)
+  console.log("getUserId user():", user.user)
   return user.user?.id
 }
 
@@ -20,38 +20,41 @@ export const getUserByUserId = async (userId: string) => {
   return await prisma.profile.findUnique({
     where: {
       id: userId,
-    }
+    },
   })
 }
 
-export const getLoggedInUser = async (): Promise<Profile | null> =>  {
-  const userId = await getUserId();
+export const getLoggedInUser = async (): Promise<Profile | null> => {
+  const userId = await getUserId()
   return prisma.profile.findUnique({
-    where: { id: userId ?? '' },
+    where: { id: userId ?? "" },
   })
 }
-
 
 export const checkAuthPermissions = async (
   clubId: string
 ): Promise<UserPermissions> => {
   "use server"
   const userId = await getUserId()
-    console.log('checkAuthPermissions() clubId:', clubId)
+  console.log("checkAuthPermissions() clubId:", clubId)
 
-  const data = await prisma.clubMember.findUnique({
+  if (!userId) {
+    return { isLoggedIn: false, isMember: false, isAdmin: false }
+  }
+
+  const user = await prisma.clubMember.findUnique({
     where: {
-      id: userId ?? '',
-      clubId: clubId
+      userByProfile: {
+        profileId: userId,
+        clubId: clubId,
+      },
     },
   })
 
-  console.log('checkAuthPermissions() data:', data)
-
   return {
     isLoggedIn: !!userId,
-    isMember: !!data,
-    isAdmin: data?.isAdmin ?? false,
+    isMember: !!user,
+    isAdmin: user?.isAdmin ?? false,
   }
 }
 
@@ -61,8 +64,8 @@ export const getClubData = async (clubId: string) => {
     include: {
       clubMembers: {
         include: {
-          profile: true
-        }
+          profile: true,
+        },
       },
       sessions: true,
     },

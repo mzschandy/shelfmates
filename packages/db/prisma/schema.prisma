@@ -23,7 +23,7 @@ model Book {
   clubId                          String     @map("club_id") @db.Uuid
   club                            Club       @relation(fields: [clubId], references: [id], onDelete: Cascade)
   sessionsBooksSessionIdToSession Session    @relation("books_session_idTosessions", fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  clubMember                      ClubMember @relation(fields: [uploadedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  clubMember                      ClubMember @relation(fields: [uploadedBy, clubId], references: [id, clubId], onDelete: NoAction, onUpdate: NoAction)
   sessionsSessionsBookIdToBooks   Session[]  @relation("sessions_book_idTobooks")
 
   @@map("books")
@@ -33,7 +33,7 @@ model Book {
 model ClubMember {
   isAdmin   Boolean   @default(false) @map("is_admin")
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String    @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   clubId    String    @map("club_id") @db.Uuid
   profileId String    @map("profile_id") @db.Uuid
   books     Book[]
@@ -41,6 +41,8 @@ model ClubMember {
   profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   comments  Comment[]
 
+  @@id([id, clubId])
+  @@unique(fields: [profileId, clubId], name: "userByProfile")
   @@map("club_members")
 }
 
@@ -76,7 +78,7 @@ model Comment {
   depth        Int        @default(0)
   clubId       String     @map("club_id") @db.Uuid
   club         Club       @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  clubMember   ClubMember @relation(fields: [clubMemberId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  clubMember   ClubMember @relation(fields: [clubMemberId, clubId], references: [id, clubId], onDelete: NoAction, onUpdate: NoAction)
   session      Session?   @relation(fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   thread       Thread     @relation(fields: [threadId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_thread_id")
 
