@@ -8,9 +8,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import SessionMetadata from "@/components/sessions/session-metadata"
+import { getSessionData } from "@/lib/data"
 
 export default async function SessionPage({params}: {params: Promise<{sessionId: string}>}) {
   const {sessionId} = await params
+  console.log("session id from params?", sessionId)
+  const sessionData = await getSessionData(sessionId);
   return (
     <div className="p-8">
       <Breadcrumb className="mb-4">
@@ -25,36 +29,7 @@ export default async function SessionPage({params}: {params: Promise<{sessionId:
         </BreadcrumbList>
       </Breadcrumb>
       <div className="flex">
-        <div>
-          <div>
-            <div className="text-xs">Our Rating: 3/5</div>
-            <div className="text-3xl">Book Name</div>
-            <div className="text-sm">by Author Name</div>
-            <div className="w-[200px] h-[310px] bg-gray-600"></div>
-          </div>
-          <div className="mt-2">
-            <Button className="w-full">Read</Button>
-          </div>
-        </div>
-        <div className="ml-8">
-          <div className="text-lg font-bold">Publisher Description</div>
-          <div>
-            <p>
-              Just as she and her sister Diviners near the end of their service,
-              a mysterious knight arrives at the cathedral. Rude, heretical, and
-              devilishly handsome, the knight Rodrick has no respect for Sybil's
-              visions. But when Sybil's fellow Diviners begin to vanish one by
-              one, she has no choice but to seek his help in finding them. For
-              the world outside the cathedral’s cloister is wrought with peril.
-              Only the gods have the answers she is seeking, and as much as she
-              d rather avoid Rodrick s dark eyes and sharp tongue, only a
-              heretic can defeat a god.
-            </p>
-            <p></p>This is a random product description it has no bearing on
-            what the actual group thinks of this book. I will probably get it
-            from open library api or whatever that is called
-          </div>
-        </div>
+      <SessionMetadata bookProps={{title: 'Eragon', author: 'Christopher Paolini'}} />
       </div>
       <hr className="mt-4" />
       <div>
