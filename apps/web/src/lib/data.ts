@@ -71,14 +71,3 @@ export const getClubData = async (clubId: string) => {
     },
   })
 }
-
-export const getSessionData = async (sessionId: string) => {
-  return await prisma.session.findFirst({
-    where: {
-      title: sessionId
-    },
-    include: {
-      
-    }
-  })
-}

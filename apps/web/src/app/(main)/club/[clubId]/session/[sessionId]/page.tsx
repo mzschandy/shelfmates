@@ -9,12 +9,31 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import SessionMetadata from "@/components/sessions/session-metadata"
-import { getSessionData } from "@/lib/data"
+import { client } from "@/utils/client"
 
-export default async function SessionPage({params}: {params: Promise<{sessionId: string}>}) {
-  const {sessionId} = await params
-  console.log("session id from params?", sessionId)
+const getSessionData = async (sessionId: string) => {
+  const res = await client.api.sessions[":id"].$get({
+    param: {
+      id: sessionId,
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error("Failed to get session data")
+  }
+  const sessionData = await res.json();
+  return sessionData.data;
+}
+
+
+export default async function SessionPage({
+  params,
+}: {
+  params: Promise<{ sessionId: string }>
+}) {
+  const { sessionId } = await params
   const sessionData = await getSessionData(sessionId);
+  console.log("sess data", sessionData)
   return (
     <div className="p-8">
       <Breadcrumb className="mb-4">
@@ -24,12 +43,14 @@ export default async function SessionPage({params}: {params: Promise<{sessionId:
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Session Name</BreadcrumbPage>
+            <BreadcrumbPage>{sessionData.title}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div className="flex">
-      <SessionMetadata bookProps={{title: 'Eragon', author: 'Christopher Paolini'}} />
+        <SessionMetadata
+          bookProps={{ title: "Eragon", author: "Christopher Paolini" }}
+        />
       </div>
       <hr className="mt-4" />
       <div>
