@@ -1,5 +1,5 @@
 {
-  "extends": "@shelfmates/typescript-config/nextjs.json",
+  "extends": "@shelfmates/tsconfig/nextjs.json",
   "compilerOptions": {
     "plugins": [
       {
