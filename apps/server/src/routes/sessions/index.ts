@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import * as z from 'zod';
+import z from 'zod';
 import { prisma } from '@shelfmates/db';
 import { SessionService } from './session.service.js';
+import { transformParam } from '../../../utils/transform-param.util.js';
 
 const app = new Hono();
 const sessionService = new SessionService();
@@ -18,12 +19,13 @@ const sessionRouter = app
     return c.json({ message: 'Sessions endpoint' });
   })
   //Get a session by its title
-  .get('/:id', zValidator('param', z.object({id: z.string()})), async (c) => {
-    const {id: title} = c.req.valid('param')
-
+  .get('/:title', zValidator('param', z.object({title: z.string()})), async (c) => {
+    const {title} = c.req.valid('param')
+    const readableTitle = transformParam(title);
+    
     const session = await prisma.session.findFirst({
       where: {
-        title,
+        title: readableTitle,
       },
     });
 
@@ -37,7 +39,7 @@ const sessionRouter = app
   })
   //Creates a new session with a book object
   .post(
-    '/create-session',
+    '/create',
     zValidator('json', sessionSchema, (result, c) => {
       if (!result.success) {
         return c.text('Invalid input', 400);
