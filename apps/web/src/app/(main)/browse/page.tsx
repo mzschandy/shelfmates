@@ -1,30 +1,24 @@
-import { Button } from "@/components/ui/button"
 import BookClub from "@/components/clubs/book-club"
 import { createClient } from "@/utils/supabase/server"
-import { redirect } from "next/navigation"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { createClub } from "../club/actions"
-import NewClubModal from "@/components/clubs/new-club"
+import NewClubModal from "@/components/clubs/new-club-modal"
+import { client } from "@/utils/client"
+
+const getClubData = async () => {
+  const res = await client.api.clubs.all.$get();
+
+  if (!res.ok) {
+    throw new Error("failed to get clubs")
+  }
+
+  const clubs = await res.json();
+  return clubs.data;
+}
 
 export default async function Browse() {
   const supabase = await createClient()
   const { data, error } = await supabase.auth.getUser()
-  const { data: clubsData, error: clubsError } = await supabase
-    .from("clubs")
-    .select("*")
-  console.log("clubs data", clubsData)
-
+  const clubs = await getClubData();
+  console.log('clubs from hono', clubs)
   return (
     <main className="w-full">
       <div className="p-4">
@@ -33,8 +27,8 @@ export default async function Browse() {
           {data.user ? <NewClubModal user={data.user} /> : null}
         </div>
         <div className="grid grid-cols-4 gap-4 h-auto">
-          {clubsData?.length ? (
-            clubsData.map((club) => <BookClub key={club.id} club={club} />)
+          {clubs?.length ? (
+            clubs.map((club) => <BookClub key={club.id} club={club} />)
           ) : (
             <div className="col-span-4 text-center">No clubs available</div>
           )}

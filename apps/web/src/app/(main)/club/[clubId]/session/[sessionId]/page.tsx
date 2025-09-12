@@ -12,9 +12,9 @@ import SessionMetadata from "@/components/sessions/session-metadata"
 import { client } from "@/utils/client"
 
 const getSessionData = async (sessionId: string) => {
-  const res = await client.api.sessions[":id"].$get({
+  const res = await client.api.sessions[":title"].$get({
     param: {
-      id: sessionId,
+      title: sessionId,
     },
   })
 
@@ -32,6 +32,7 @@ export default async function SessionPage({
   params: Promise<{ sessionId: string }>
 }) {
   const { sessionId } = await params
+  console.log('session id', sessionId)
   const sessionData = await getSessionData(sessionId);
   console.log("sess data", sessionData)
   return (

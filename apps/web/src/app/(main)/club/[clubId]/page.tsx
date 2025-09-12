@@ -4,7 +4,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import NewSessionModal from "@/components/sessions/new-session-modal"
 import { joinClub } from "./session/actions"
-import { checkAuthPermissions, getClubData, getLoggedInUser, getUserByUserId } from "@/lib/data"
+import {
+  checkAuthPermissions,
+  getLoggedInUser,
+  getUserByUserId,
+  getUserId,
+} from "@/lib/data"
+import { client } from "@/utils/client"
 
 interface ClubMember {
   id: string
@@ -22,6 +28,44 @@ interface ClubData {
   idOld: string
   isPublic: string
   title: string
+}
+
+const getClubPermissionsForUser = async (clubTitle: string, userId: string) => {
+  const res = await client.api.clubs[":title"].permissions[":userId"].$get({
+    param: {
+      title: clubTitle,
+      userId,
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error("Could not get club permissions")
+  }
+
+  const {
+    data: { isLoggedIn, isMember, isAdmin },
+  } = await res.json()
+
+  return {
+    isLoggedIn,
+    isMember,
+    isAdmin,
+  }
+}
+
+const getClubData = async (clubTitle: string) => {
+  const res = await client.api.clubs[":title"].$get({
+    param: {
+      title: clubTitle,
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error("Could not get club data")
+  }
+
+  const club = await res.json()
+  return club.data
 }
 
 function ThreadsLister() {
@@ -69,8 +113,19 @@ export default async function ClubPage({
   params: Promise<{ clubId: string }>
 }) {
   const { clubId } = await params
-  const { isLoggedIn, isMember, isAdmin } = await checkAuthPermissions(clubId)
-    const clubData = await getClubData(clubId);
+  const userId = await getUserId()
+  console.log("club Id", clubId)
+  console.log("club id combined", clubId.split("-").join(" "))
+
+  if (!userId) {
+    throw new Error("User not authorized")
+  }
+
+  const clubData = await getClubData(clubId)
+  const { isLoggedIn, isMember, isAdmin } = await getClubPermissionsForUser(
+    clubId,
+    userId
+  )
 
   console.log(
     "auth check w/ prisma, isLoggedIn, isMember, isAdmin",
@@ -83,8 +138,8 @@ export default async function ClubPage({
     return <div>Error fetching club data</div>
   }
   const creator = await getUserByUserId(clubData?.creatorId)
-  console.log('prisma club data', clubData);
-  console.log("prisma creator", creator ?? '')
+  console.log("prisma club data", clubData)
+  console.log("prisma creator", creator ?? "")
   const profile = await getLoggedInUser()
   console.log("prisma profile", profile)
 
@@ -93,7 +148,7 @@ export default async function ClubPage({
       <div className="">
         <div className="flex justify-between">
           <h1 className="text-3xl">{clubData.title}</h1>
-          {isAdmin &&  <Button>Settings</Button>}
+          {isAdmin && <Button>Settings</Button>}
         </div>
         <div className="mt-2 flex justify-between">
           <div className="mt-4 flex align-middle">
@@ -142,7 +197,7 @@ export default async function ClubPage({
           {clubData.sessions.map((session) => (
             <Session
               session={session}
-              clubId={clubData.id}
+              clubTitle={clubId}
               key={session.id}
               isActive={session.isActive}
             />
