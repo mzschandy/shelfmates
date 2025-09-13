@@ -1,9 +1,21 @@
-import { login } from "@/app/(auth)/login/actions"
-import { Button } from "../ui/button"
-import { Input } from "../ui/input"
-import { Label } from "../ui/label"
+"use client";
+
+import { login } from "@/app/(auth)/login/actions";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { useSignIn } from "@/hooks/useAuth";
 
 export default function Login() {
+  const { signInMutation } = useSignIn();
+
+  const handleLogin = async (data: FormData) => {
+    const email = data.get("email") as string;
+    const password = data.get("password") as string;
+
+    signInMutation.mutate({ email, password });
+  };
+
   return (
     <div className="mt-4 mb-4">
       <form>
@@ -26,9 +38,9 @@ export default function Login() {
           />
         </div>
         <div className="flex flex-col gap-2 mt-5">
-          <Button formAction={login}>Log In</Button>
+          <Button formAction={handleLogin}>Log In</Button>
         </div>
       </form>
     </div>
-  )
+  );
 }
