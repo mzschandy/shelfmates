@@ -18,8 +18,8 @@
       "dependsOn": ["^db:generate"],
       "cache": false,
       "persistent": true,
-      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.local"],
-      "env": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "DATABASE_URL"]
+      "inputs": ["$TURBO_DEFAULT$", ".env*", ".env.local"],
+      "env": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "DATABASE_URL", "BACKEND_SUPABASE_URL", "BACKEND_SUPABASE_ANON_KEY"]
     },
     "db:generate": {
       "cache": false

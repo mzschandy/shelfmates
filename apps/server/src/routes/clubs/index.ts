@@ -3,6 +3,7 @@ import { prisma } from '@shelfmates/db';
 import { Hono } from 'hono';
 import z from 'zod';
 import { transformParam } from '../../../utils/transform-param.util.js';
+import { getSupabase } from '../../middleware/auth.middleware.js';
 
 const app = new Hono();
 
@@ -27,6 +28,10 @@ const joinClubSchema = z.object({
 const clubRouter = app
   //Gets all the clubs
   .get('/all', async (c) => {
+    const supabase = getSupabase(c);
+    const { data, error } = await supabase.auth.getUser()
+    if (error) console.log('server supabase auth error', error)
+      console.log('server supabase auth', data.user)
     const clubs = await prisma.club.findMany();
     return c.json({ data: clubs });
   })

@@ -1,7 +1,7 @@
 {
   "extends": "@shelfmates/tsconfig/base",
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "es2020",
     "verbatimModuleSyntax": true,
     "types": [
       "node"
