@@ -2,8 +2,8 @@ import { zValidator } from '@hono/zod-validator';
 import { prisma } from '@shelfmates/db';
 import { Hono } from 'hono';
 import z from 'zod';
-import { transformParam } from '../../../utils/transform-param.util.js';
-import { getSupabase } from '../../middleware/auth.middleware.js';
+import { transformParam } from '@/utils/transform-param.util.js';
+import { getSupabase } from '@/middleware/auth.middleware.js';
 
 const app = new Hono();
 

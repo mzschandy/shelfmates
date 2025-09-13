@@ -3,7 +3,7 @@ import { zValidator } from '@hono/zod-validator';
 import z from 'zod';
 import { prisma } from '@shelfmates/db';
 import { SessionService } from './session.service.js';
-import { transformParam } from '../../../utils/transform-param.util.js';
+import { transformParam } from '@/utils/transform-param.util.js';
 
 const app = new Hono();
 const sessionService = new SessionService();

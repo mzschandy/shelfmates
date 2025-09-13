@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { getSupabase } from '../../middleware/auth.middleware.js';
+import { getSupabase } from '@/middleware/auth.middleware.js';
 import z from 'zod';
 import { zValidator } from '@hono/zod-validator';
 

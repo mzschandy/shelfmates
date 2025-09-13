@@ -8,8 +8,12 @@
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*", "../*"],
+    }
   },
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules", "dist"],
   "references": [{"path": "../../packages/db"}]
 }
