@@ -1,24 +1,24 @@
-import BookClub from "@/components/clubs/book-club"
-import { createClient } from "@/utils/supabase/server"
-import NewClubModal from "@/components/clubs/new-club-modal"
-import { client } from "@/utils/client"
+import BookClub from "@/components/clubs/book-club";
+import { createClient } from "@/utils/supabase/server";
+import NewClubModal from "@/components/clubs/new-club-modal";
+import { client } from "@/utils/client";
 
 const getClubData = async () => {
   const res = await client.api.clubs.all.$get();
 
   if (!res.ok) {
-    throw new Error("failed to get clubs")
+    throw new Error("failed to get clubs");
   }
 
   const clubs = await res.json();
   return clubs.data;
-}
+};
 
 export default async function Browse() {
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.getUser()
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getUser();
   const clubs = await getClubData();
-  console.log('clubs from hono', clubs)
+  console.log("clubs from hono", clubs);
   return (
     <main className="w-full">
       <div className="p-4">
@@ -35,5 +35,5 @@ export default async function Browse() {
         </div>
       </div>
     </main>
-  )
+  );
 }

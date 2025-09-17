@@ -1,72 +1,94 @@
-import Session from "@/components/sessions/session"
-import Thread from "@/components/comments/thread"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import NewSessionModal from "@/components/sessions/new-session-modal"
-import { joinClub } from "./session/actions"
-import {
-  checkAuthPermissions,
-  getLoggedInUser,
-  getUserByUserId,
-  getUserId,
-} from "@/lib/data"
-import { client } from "@/utils/client"
+import Session from "@/components/sessions/session";
+import Thread from "@/components/comments/thread";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import NewSessionModal from "@/components/sessions/new-session-modal";
+import { joinClub } from "./session/actions";
+import { checkAuthPermissions } from "@/lib/data";
+import { serverClient } from "@/utils/server";
 
 interface ClubMember {
-  id: string
-  clubId: string
-  clubIdOld: number
-  createdAt: string
-  isAdmin: boolean
+  id: string;
+  clubId: string;
+  clubIdOld: number;
+  createdAt: string;
+  isAdmin: boolean;
 }
 
 interface ClubData {
-  createdAt: string
-  creatorId: string
-  description: string
-  id: string
-  idOld: string
-  isPublic: string
-  title: string
+  createdAt: string;
+  creatorId: string;
+  description: string;
+  id: string;
+  idOld: string;
+  isPublic: string;
+  title: string;
 }
 
-const getClubPermissionsForUser = async (clubTitle: string, userId: string) => {
-  const res = await client.api.clubs[":title"].permissions[":userId"].$get({
-    param: {
-      title: clubTitle,
-      userId,
-    },
-  })
+const getLoggedInUser = async () => {
+  const res = await serverClient.api.users["current-user"].$get();
 
   if (!res.ok) {
-    throw new Error("Could not get club permissions")
+    throw new Error("Could not get user");
+  }
+
+  const user = await res.json();
+
+  return { isUser: !!user.data, user: user.data ?? null };
+};
+
+const getClubPermissionsForUser = async (clubTitle: string) => {
+  const res = await serverClient.api.clubs[":title"].permissions.$get({
+    param: {
+      title: clubTitle,
+    },
+  });
+
+  if (!res.ok) {
+    return { isLoggedIn: false, isMember: false, isAdmin: false };
   }
 
   const {
     data: { isLoggedIn, isMember, isAdmin },
-  } = await res.json()
+  } = await res.json();
 
   return {
     isLoggedIn,
     isMember,
     isAdmin,
-  }
-}
+  };
+};
 
 const getClubData = async (clubTitle: string) => {
-  const res = await client.api.clubs[":title"].$get({
+  const res = await serverClient.api.clubs[":title"].$get({
     param: {
       title: clubTitle,
     },
-  })
+  });
 
   if (!res.ok) {
-    throw new Error("Could not get club data")
+    throw new Error("Could not get club data");
   }
 
-  const club = await res.json()
-  return club.data
-}
+  const club = await res.json();
+  return club.data;
+};
+
+const getUserById = async (userId: string) => {
+  const res = await serverClient.api.users["user-by-id"][":id"].$get({
+    param: {
+      id: userId,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error('Could not get user');
+  }
+
+  const user = await res.json();
+
+  return user.data;
+};
 
 function ThreadsLister() {
   return (
@@ -80,7 +102,7 @@ function ThreadsLister() {
         <Thread />
       </div>
     </>
-  )
+  );
 }
 
 function AvatarList() {
@@ -104,44 +126,36 @@ function AvatarList() {
         </Avatar>
       </div>
     </div>
-  )
+  );
 }
 
 export default async function ClubPage({
   params,
 }: {
-  params: Promise<{ clubId: string }>
+  params: Promise<{ clubId: string }>;
 }) {
-  const { clubId } = await params
-  const userId = await getUserId()
-  console.log("club Id", clubId)
-  console.log("club id combined", clubId.split("-").join(" "))
+  const { clubId } = await params;
+  // const userId = await getUserId()
 
-  if (!userId) {
-    throw new Error("User not authorized")
-  }
-
-  const clubData = await getClubData(clubId)
-  const { isLoggedIn, isMember, isAdmin } = await getClubPermissionsForUser(
-    clubId,
-    userId
-  )
+  const clubData = await getClubData(clubId);
+  const { isLoggedIn, isMember, isAdmin } =
+    await getClubPermissionsForUser(clubId);
 
   console.log(
     "auth check w/ prisma, isLoggedIn, isMember, isAdmin",
     isLoggedIn,
     isMember,
-    isAdmin
-  )
+    isAdmin,
+  );
 
   if (!clubData) {
-    return <div>Error fetching club data</div>
+    return <div>Error fetching club data</div>;
   }
-  const creator = await getUserByUserId(clubData?.creatorId)
-  console.log("prisma club data", clubData)
-  console.log("prisma creator", creator ?? "")
-  const profile = await getLoggedInUser()
-  console.log("prisma profile", profile)
+  const creator = await getUserById(clubData?.creatorId);
+  console.log("prisma club data", clubData);
+  console.log("prisma creator", creator ?? "");
+  const { isUser, user: profile } = await getLoggedInUser();
+  console.log("prisma profile", profile);
 
   return (
     <div className="p-8">
@@ -214,5 +228,5 @@ export default async function ClubPage({
         )}
       </div>
     </div>
-  )
+  );
 }

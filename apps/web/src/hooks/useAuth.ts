@@ -70,7 +70,7 @@ export const useLogOut = () => {
       return client.api.auth.signout.$post();
     },
     onSuccess: () => {
-      router.push("/");
+      router.push("/browse");
     },
     onError: () => {
       router.push("/error");
