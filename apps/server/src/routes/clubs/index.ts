@@ -3,9 +3,9 @@ import { prisma } from '@shelfmates/db';
 import { Hono } from 'hono';
 import z from 'zod';
 import { transformParam } from '@/utils/transform-param.util.js';
-import { getSupabase } from '@/middleware/auth.middleware.js';
+import { getSupabase, type Env } from '@/middleware/auth.middleware.js';
 
-const app = new Hono();
+const app = new Hono<Env>();
 
 const createClubSchema = z.object({
   title: z.string(),
@@ -17,7 +17,6 @@ const createClubSchema = z.object({
 
 const clubPermissionsSchema = z.object({
   title: z.string(),
-  userId: z.string(),
 });
 
 const joinClubSchema = z.object({
@@ -28,10 +27,6 @@ const joinClubSchema = z.object({
 const clubRouter = app
   //Gets all the clubs
   .get('/all', async (c) => {
-    const supabase = getSupabase(c);
-    const { data, error } = await supabase.auth.getUser()
-    if (error) console.log('server supabase auth error', error)
-      console.log('server supabase auth', data.user)
     const clubs = await prisma.club.findMany();
     return c.json({ data: clubs });
   })
@@ -40,7 +35,6 @@ const clubRouter = app
     '/:title',
     zValidator('param', z.object({ title: z.string() })),
     async (c) => {
-      // const id = c.req.param('id');
       const { title } = c.req.valid('param');
 
       const readableTitle = transformParam(title);
@@ -62,55 +56,56 @@ const clubRouter = app
       if (!club) {
         return c.json({ error: 'Could not retrieve club' }, 404);
       }
+
       return c.json({ data: club });
     },
   )
-  //Gets all the sessions for a club
-  .get('/:id/sessions', (c) => {
-    return c.json({ message: 'get all sessions for club' });
-  })
   //Gets the permissions for a given user
   .get(
-    '/:title/permissions/:userId',
+    '/:title/permissions',
     zValidator('param', clubPermissionsSchema),
     async (c) => {
-      // const title = c.req.param('id');
-      // const userId = c.req.param('userId');
-      const { title, userId } = c.req.valid('param');
-
+      const supabase = getSupabase(c);
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+      const { title } = c.req.valid('param');
       const readableTitle = transformParam(title);
 
-      if (!userId) {
+      if (!user || error) {
         return c.json(
           { isLoggedIn: false, isMember: false, isAdmin: false },
           404,
         );
       }
 
-      const clubId = await prisma.club.findFirst({
-        where: {
-          title: readableTitle,
-        },
-      });
-
-      console.log('server clubId', clubId);
-
-      if (!clubId) {
-        return c.json({ error: 'Could not find club' }, 404);
-      }
-
-      const clubPermissions = await prisma.clubMember.findUnique({
-        where: {
-          userByProfile: {
-            profileId: userId,
-            clubId: clubId.id,
+      const clubPermissions = await prisma.$transaction(async (tx) => {
+        const clubId = await tx.club.findFirst({
+          where: {
+            title: readableTitle,
           },
-        },
+        });
+
+        const clubPermissions = await tx.clubMember.findUnique({
+          where: {
+            userByProfile: {
+              profileId: user.id ?? '',
+              clubId: clubId?.id ?? '',
+            },
+          },
+        });
+
+        return clubPermissions;
       });
+
+      if (!clubPermissions) {
+        return c.json({ error: 'Could not find club or club member' }, 404);
+      }
 
       return c.json({
         data: {
-          isLoggedIn: !!userId,
+          isLoggedIn: !!user.id,
           isMember: !!clubPermissions,
           isAdmin: clubPermissions?.isAdmin ?? false,
         },
@@ -143,7 +138,7 @@ const clubRouter = app
       },
     });
 
-    return c.json({data: newMember}, 201)
+    return c.json({ data: newMember }, 201);
   });
 
 export default clubRouter;

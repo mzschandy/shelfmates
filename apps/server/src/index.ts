@@ -1,27 +1,29 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { authMiddleware, type Env } from './middleware/auth.middleware.js';
+import dotenv from 'dotenv/config';
+
 import sessionRouter from './routes/sessions/index.js';
 import clubRouter from './routes/clubs/index.js';
 import authRouter from './routes/auth/index.js';
-import { cors } from 'hono/cors';
-import { authMiddleware } from './middleware/auth.middleware.js';
-import dotenv from 'dotenv/config';
+import usersRouter from './routes/users/index.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-const api = new Hono().basePath('/api');
-
-api.use(
-  cors({
-    origin: 'http://localhost:3000',
-    credentials: true,
-  }),
-);
-
-api.use(authMiddleware());
-
-const routes = api
-  .route('/sessions', sessionRouter)
+const api = new Hono<Env>()
+  .basePath('/api')
+  .use(
+    cors({
+      origin: 'http://localhost:3000',
+      credentials: true,
+    }),
+  )
+  .use(authMiddleware())
+  .route('/auth', authRouter)
+  .route('/users', usersRouter)
   .route('/clubs', clubRouter)
-  .route('/auth', authRouter);
+  .route('/sessions', sessionRouter);
+
 
 serve(
   {
@@ -34,4 +36,4 @@ serve(
 );
 
 export default api;
-export type AppType = typeof routes;
+export type AppType = typeof api;

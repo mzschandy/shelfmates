@@ -1,19 +1,25 @@
 import type { Context, MiddlewareHandler } from 'hono';
-import { env } from 'hono/adapter'
-import { setCookie } from 'hono/cookie';
+import { env } from 'hono/adapter';
+import { getCookie, setCookie } from 'hono/cookie';
 import { createServerClient, parseCookieHeader } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const getSupabase = (c: Context) => {
-  return c.get('supabase') as SupabaseClient;
-}
+export const getSupabase = (c: Context<Env>) => {
+  return c.var.supabase as SupabaseClient;
+};
 
 type SupabaseEnv = {
-  BACKEND_SUPABASE_URL: string
-  BACKEND_SUPABASE_ANON_KEY: string
-}
+  BACKEND_SUPABASE_URL: string;
+  BACKEND_SUPABASE_ANON_KEY: string;
+};
 
-export const authMiddleware = (): MiddlewareHandler => {
+export type Env = {
+  Variables: {
+    supabase: SupabaseClient;
+  };
+};
+
+export const authMiddleware = (): MiddlewareHandler<Env> => {
   return async (c, next) => {
     const supabaseEnv = env<SupabaseEnv>(c);
     const supabaseUrl = supabaseEnv.BACKEND_SUPABASE_URL;
@@ -33,11 +39,17 @@ export const authMiddleware = (): MiddlewareHandler => {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>
-            setCookie(c, name, value, options),
+            setCookie(c, name, value, {
+              ...options,
+              secure: false,
+              sameSite: 'lax',
+              path: '/',
+            }),
           );
         },
       },
     });
+
     c.set('supabase', supabase);
     await next();
   };

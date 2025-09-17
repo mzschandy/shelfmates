@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { getSupabase } from '@/middleware/auth.middleware.js';
+import { getSupabase, type Env } from '@/middleware/auth.middleware.js';
 import z from 'zod';
 import { zValidator } from '@hono/zod-validator';
 
@@ -14,7 +14,7 @@ const SignUpSchema = z.object({
   username: z.string(),
 });
 
-const app = new Hono();
+const app = new Hono<Env>();
 
 const authRouter = app
   .post('/login', zValidator('form', LoginSchema), async (c) => {
