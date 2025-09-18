@@ -1,5 +1,4 @@
 import BookClub from "@/components/clubs/book-club";
-import { createClient } from "@/utils/supabase/server";
 import NewClubModal from "@/components/clubs/new-club-modal";
 import { serverClient } from "@/utils/server";
 
@@ -27,7 +26,7 @@ const getLoggedInUser = async () => {
 };
 
 export default async function Browse() {
-  const {isUser, user} = await getLoggedInUser();
+  const { isUser, user } = await getLoggedInUser();
   const clubs = await getClubData();
   console.log("clubs from hono", clubs);
   return (

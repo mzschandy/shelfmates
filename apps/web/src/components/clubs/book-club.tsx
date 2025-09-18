@@ -1,7 +1,11 @@
-import { Club } from "@shelfmates/db"
-import Link from "next/link"
+"use client";
 
-export default function BookClub({ club }: { club: {
+import Link from "next/link";
+
+export default function BookClub({
+  club,
+}: {
+  club: {
     id: string;
     title: string;
     createdAt: string;
@@ -9,22 +13,23 @@ export default function BookClub({ club }: { club: {
     isPublic: boolean;
     creatorId: string;
     threadId: string[];
-} }) {
-  console.log("Club data:", club)
+  };
+}) {
+  console.log("Club data:", club);
 
   if (!club) {
-    return <div>Error displaying club</div>
+    return <div>Error displaying club</div>;
   }
 
   const createParam = () => {
-    const title = (club.title).toLowerCase().split(' ');
+    const title = club.title.toLowerCase().split(" ");
     if (title.length > 1) {
-      return title.join('-');
+      return title.join("-");
     }
     return title;
-  }
+  };
 
-  console.log('create params', createParam());
+  console.log("create params", createParam());
 
   return (
     <Link href={`/club/${createParam()}`} className="no-underline">
@@ -41,5 +46,5 @@ export default function BookClub({ club }: { club: {
         </div>
       </div>
     </Link>
-  )
+  );
 }

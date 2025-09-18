@@ -4,7 +4,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import NewSessionModal from "@/components/sessions/new-session-modal";
 import { joinClub } from "./session/actions";
-import { checkAuthPermissions } from "@/lib/data";
 import { serverClient } from "@/utils/server";
 
 const getLoggedInUser = async () => {
@@ -64,7 +63,7 @@ const getUserById = async (userId: string) => {
   });
 
   if (!res.ok) {
-    throw new Error('Could not get user');
+    throw new Error("Could not get user");
   }
 
   const user = await res.json();

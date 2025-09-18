@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { createClub } from "@/app/(main)/club/actions"
-import { Button } from "../ui/button"
+import { createClub } from "@/app/(main)/club/actions";
+import { Button } from "../ui/button";
 import {
   Dialog,
   DialogClose,
@@ -11,13 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../ui/dialog"
-import { Input } from "../ui/input"
-import { Label } from "../ui/label"
-import { create } from "domain"
+} from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 
 export default function NewClubModal({ user }: { user?: any }) {
-  console.log("NewClubModal user:", user)
+  console.log("NewClubModal user:", user);
   // const createClubWWithId = createClub.bind(null, user?.id);
   return (
     <Dialog>
@@ -60,5 +59,5 @@ export default function NewClubModal({ user }: { user?: any }) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

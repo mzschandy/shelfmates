@@ -39,7 +39,9 @@ export default async function SessionPage({
       <Breadcrumb className="mb-4">
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/club">{sessionData.club.title}</BreadcrumbLink>
+            <BreadcrumbLink href="/club">
+              {sessionData.club.title}
+            </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>

@@ -8,8 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Home, LogOut } from "lucide-react";
-import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { logout } from "@/app/(auth)/login/actions";
 import { useLogOut } from "@/hooks/useAuth";
 
@@ -43,7 +42,10 @@ export default function UserMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="flex flex-col gap-1">
         <form className="w-full">
-          <button onClick={() => signOutMutation.mutate()} className="flex w-full">
+          <button
+            onClick={() => signOutMutation.mutate()}
+            className="flex w-full"
+          >
             <DropdownMenuItem className="w-full flex-1 cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Sign out</span>

@@ -1,21 +1,21 @@
 import {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../ui/dialog"
-import { Input } from "../ui/input"
-import { Label } from "../ui/label"
-import { Button } from "../ui/button"
-import { createSession } from "@/app/(main)/club/[clubId]/session/actions"
+} from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { createSession } from "@/app/(main)/club/[clubId]/session/actions";
 
-export default function NewSessionModal({clubId, clubMemberId}: {clubId: string, clubMemberId: string}) {
-  // console.log("NewSessionModal user:", user)
-
+export default function NewSessionModal({
+  clubId,
+  clubMemberId,
+}: {
+  clubId: string;
+  clubMemberId: string;
+}) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -30,7 +30,11 @@ export default function NewSessionModal({clubId, clubMemberId}: {clubId: string,
             <div className="grid gap-3">
               <div className="mt-4 mb-4">
                 <form>
-                  <input type="hidden" name="clubMemberId" value={clubMemberId} />
+                  <input
+                    type="hidden"
+                    name="clubMemberId"
+                    value={clubMemberId}
+                  />
                   <input type="hidden" name="clubId" value={clubId} />
                   <div className="grid gap-2">
                     <label htmlFor="title">Upload a Book</label>
@@ -48,5 +52,5 @@ export default function NewSessionModal({clubId, clubMemberId}: {clubId: string,
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

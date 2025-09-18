@@ -3,10 +3,10 @@ import {
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-} from "@/components/ui/navigation-menu"
-import { createClient } from "@/utils/supabase/server"
-import Link from "next/link"
-import UserMenu from "@/components/header/user-menu"
+} from "@/components/ui/navigation-menu";
+import { createClient } from "@/utils/supabase/server";
+import Link from "next/link";
+import UserMenu from "@/components/header/user-menu";
 
 function LoginLinks() {
   return (
@@ -24,7 +24,7 @@ function LoginLinks() {
         </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
-  )
+  );
 }
 
 function NavMenu() {
@@ -38,15 +38,15 @@ function NavMenu() {
         </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
-  )
+  );
 }
 
 async function Header() {
-  const supabase = await createClient()
+  const supabase = await createClient();
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   return (
     <header className="flex items-center justify-between p-4">
@@ -58,18 +58,18 @@ async function Header() {
       </div>
       <div>{user ? <UserMenu email={user?.email} /> : <LoginLinks />}</div>
     </header>
-  )
+  );
 }
 
 export default function Layout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <>
       <Header />
       {children}
     </>
-  )
+  );
 }

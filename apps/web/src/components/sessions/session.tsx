@@ -1,25 +1,25 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Badge } from "../ui/badge"
-import { prisma, type Session } from "@shelfmates/db"
-import { useQuery } from "@tanstack/react-query"
+import Link from "next/link";
+import { Badge } from "../ui/badge";
+import { prisma, type Session } from "@shelfmates/db";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Session({
   isActive,
   clubTitle,
   session,
 }: {
-  isActive: boolean
-  clubTitle: string
+  isActive: boolean;
+  clubTitle: string;
   session: {
-    title: string
-    isActive: boolean
-    createdAt: string
-    id: string
-    bookId: string | null
-    clubId: string
-  }
+    title: string;
+    isActive: boolean;
+    createdAt: string;
+    id: string;
+    bookId: string | null;
+    clubId: string;
+  };
 }) {
   const { data: bookData, isLoading } = useQuery({
     queryKey: ["sessionListerItem", session.id],
@@ -28,18 +28,18 @@ export default function Session({
         where: {
           sessionId: session.id,
         },
-      })
-      return data
+      });
+      return data;
     },
-  })
+  });
 
   const createParam = () => {
-    const title = session.title.toLowerCase().split(" ")
+    const title = session.title.toLowerCase().split(" ");
     if (title.length > 1) {
-      return title.join("-")
+      return title.join("-");
     }
-    return title
-  }
+    return title;
+  };
 
   return (
     <div className="border border-gray-600 rounded-sm cursor-pointer">
@@ -61,5 +61,5 @@ export default function Session({
         </div>
       </Link>
     </div>
-  )
+  );
 }

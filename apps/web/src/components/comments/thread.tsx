@@ -1,3 +1,5 @@
+"use client";
+
 export default function Thread() {
   return (
     <>
@@ -10,5 +12,5 @@ export default function Thread() {
         <div className="text-sm">52 Comments</div>
       </div>
     </>
-  )
+  );
 }
