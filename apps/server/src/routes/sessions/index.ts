@@ -27,6 +27,13 @@ const sessionRouter = app
       where: {
         title: readableTitle,
       },
+      include: {
+        club: {
+          select: {
+            title: true
+          }
+        }
+      }
     });
 
     console.log('session data', session);
