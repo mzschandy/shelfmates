@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,40 +7,39 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import SessionMetadata from "@/components/sessions/session-metadata"
-import { client } from "@/utils/client"
+} from "@/components/ui/breadcrumb";
+import SessionMetadata from "@/components/sessions/session-metadata";
+import { serverClient } from "@/utils/server";
 
 const getSessionData = async (sessionId: string) => {
-  const res = await client.api.sessions[":title"].$get({
+  const res = await serverClient.api.sessions[":title"].$get({
     param: {
       title: sessionId,
     },
-  })
+  });
 
   if (!res.ok) {
-    throw new Error("Failed to get session data")
+    throw new Error("Failed to get session data");
   }
   const sessionData = await res.json();
   return sessionData.data;
-}
-
+};
 
 export default async function SessionPage({
   params,
 }: {
-  params: Promise<{ sessionId: string }>
+  params: Promise<{ sessionId: string }>;
 }) {
-  const { sessionId } = await params
-  console.log('session id', sessionId)
+  const { sessionId } = await params;
+  console.log("session id", sessionId);
   const sessionData = await getSessionData(sessionId);
-  console.log("sess data", sessionData)
+  console.log("sess data", sessionData);
   return (
     <div className="p-8">
       <Breadcrumb className="mb-4">
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/club">Book</BreadcrumbLink>
+            <BreadcrumbLink href="/club">{sessionData.club.title}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -128,5 +127,5 @@ export default async function SessionPage({
         </Tabs>
       </div>
     </div>
-  )
+  );
 }

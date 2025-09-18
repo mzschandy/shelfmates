@@ -7,24 +7,6 @@ import { joinClub } from "./session/actions";
 import { checkAuthPermissions } from "@/lib/data";
 import { serverClient } from "@/utils/server";
 
-interface ClubMember {
-  id: string;
-  clubId: string;
-  clubIdOld: number;
-  createdAt: string;
-  isAdmin: boolean;
-}
-
-interface ClubData {
-  createdAt: string;
-  creatorId: string;
-  description: string;
-  id: string;
-  idOld: string;
-  isPublic: string;
-  title: string;
-}
-
 const getLoggedInUser = async () => {
   const res = await serverClient.api.users["current-user"].$get();
 

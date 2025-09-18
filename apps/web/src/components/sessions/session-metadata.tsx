@@ -1,47 +1,47 @@
-"use client"
-import { useQuery } from "@tanstack/react-query"
-import { Button } from "../ui/button"
-import { getBookContent, getBookQuery } from "@/lib/open-library"
+"use client";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "../ui/button";
+import { getBookContent, getBookQuery } from "@/lib/open-library";
 
 export interface BookProps {
-  title: string
-  author: string
-  description?: string
+  title: string;
+  author: string;
+  description?: string;
 }
 
 export default function SessionMetadata({
   bookProps,
 }: {
-  bookProps: BookProps
+  bookProps: BookProps;
 }) {
   const { data: bookData, isLoading } = useQuery({
     queryKey: ["session", bookProps.title],
     queryFn: async () => {
-      const data = await getBookQuery(bookProps.title, bookProps.author)
+      const data = await getBookQuery(bookProps.title, bookProps.author);
       if (!data || !data.docs) {
-        return null
+        return null;
       }
 
-      const key = data.docs[0]?.key
+      const key = data.docs[0]?.key;
       if (!key) {
-        return null
+        return null;
       }
 
-      const bookContent = await getBookContent(key)
+      const bookContent = await getBookContent(key);
       if (!bookContent) {
-        return null
+        return null;
       }
 
-      return bookContent
+      return bookContent;
     },
-  })
+  });
 
   if (isLoading) {
-    return <div>Loading Book Information</div>
+    return <div>Loading Book Information</div>;
   }
 
   if (!bookData) {
-    return <div>Could not fetch book data</div>
+    return <div>Could not fetch book data</div>;
   }
 
   return (
@@ -64,5 +64,5 @@ export default function SessionMetadata({
         </div>
       </div>
     </>
-  )
+  );
 }
