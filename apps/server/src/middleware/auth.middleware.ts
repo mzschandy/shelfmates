@@ -1,7 +1,11 @@
 import type { Context, MiddlewareHandler } from 'hono';
 import { env } from 'hono/adapter';
 import { getCookie, setCookie } from 'hono/cookie';
-import { createServerClient, parseCookieHeader } from '@supabase/ssr';
+import {
+  createServerClient,
+  parseCookieHeader,
+  type CookieOptions,
+} from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const getSupabase = (c: Context<Env>) => {
@@ -32,25 +36,37 @@ export const authMiddleware = (): MiddlewareHandler<Env> => {
       throw new Error('BACKEND_SUPABASE_ANON_KEY missing!');
     }
 
+    const cookiesJar: {
+      name: string;
+      value: string;
+      options: CookieOptions;
+    }[] = [];
+
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return parseCookieHeader(c.req.header('Cookie') ?? '');
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            setCookie(c, name, value, {
-              ...options,
-              secure: false,
-              sameSite: 'lax',
-              path: '/',
-            }),
-          );
+        setAll(cookieJar) {
+          cookieJar.forEach((cookie) => cookiesJar.push(cookie));
         },
       },
     });
 
+    await supabase.auth.getUser();
+
     c.set('supabase', supabase);
     await next();
+
+    if (c.res && cookiesJar.length > 0) {
+      cookiesJar.forEach(({ name, value, options }) => {
+        setCookie(c, name, value, {
+          ...options,
+          secure: false,
+          sameSite: 'lax',
+          path: '/',
+        });
+      });
+    }
   };
 };
