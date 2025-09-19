@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Dialog,
   DialogContent,
@@ -7,15 +9,28 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { createSession } from "@/app/(main)/club/[clubId]/session/actions";
+import { useCreateSession } from "@/hooks/useCreateSession";
 
 export default function NewSessionModal({
   clubId,
   clubMemberId,
 }: {
   clubId: string;
-  clubMemberId: string;
+  clubMemberId: string | undefined;
 }) {
+  const {createSession} = useCreateSession(clubId);
+
+  if (!clubMemberId) {
+    return null;
+  }
+
+  const handleCreateSession = async (data: FormData) => {
+    const epubFile = data.get("book") as File;
+    console.log('epupFile', epubFile)
+    console.log('club id', clubId);
+    createSession({epubFile, clubId, clubMemberId});
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -30,18 +45,12 @@ export default function NewSessionModal({
             <div className="grid gap-3">
               <div className="mt-4 mb-4">
                 <form>
-                  <input
-                    type="hidden"
-                    name="clubMemberId"
-                    value={clubMemberId}
-                  />
-                  <input type="hidden" name="clubId" value={clubId} />
                   <div className="grid gap-2">
                     <label htmlFor="title">Upload a Book</label>
                     <Input id="book" name="book" type="file" required />
                   </div>
                   <div className="flex flex-col gap-2 mt-5">
-                    <Button formAction={createSession} type="submit">
+                    <Button formAction={handleCreateSession} type="submit">
                       Create Session
                     </Button>
                   </div>

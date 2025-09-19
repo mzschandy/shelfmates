@@ -136,6 +136,8 @@ export default async function ClubPage({
   console.log("prisma club data", clubData);
   console.log("prisma creator", creator ?? "");
   const { isUser, user: profile } = await getLoggedInUser();
+  const loggedInClubMember = clubData.clubMembers.find((member) => member.profileId === profile.id);
+  console.log('logge din club membver', loggedInClubMember);
   console.log("prisma profile", profile);
 
   return (
@@ -179,8 +181,8 @@ export default async function ClubPage({
       </div>
       <div className="mt-4 mb-4 flex justify-between">
         <div className="text-xl">Sessions</div>
-        {isAdmin && profile && (
-          <NewSessionModal clubId={clubData.id} clubMemberId={profile?.id} />
+        {isAdmin && isUser && (
+          <NewSessionModal clubId={clubData.id} clubMemberId={loggedInClubMember?.id} />
         )}
       </div>
       {clubData.sessions.length === 0 ? (

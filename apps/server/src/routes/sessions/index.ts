@@ -8,8 +8,10 @@ import { transformParam } from '@/utils/transform-param.util.js';
 const app = new Hono();
 const sessionService = new SessionService();
 
+const epubFileSchema = z.instanceof(File);
+
 const sessionSchema = z.object({
-  book: z.file(),
+  book: epubFileSchema,
   clubId: z.string(),
   clubMemberId: z.string(),
 });
@@ -19,44 +21,55 @@ const sessionRouter = app
     return c.json({ message: 'Sessions endpoint' });
   })
   //Get a session by its title
-  .get('/:title', zValidator('param', z.object({title: z.string()})), async (c) => {
-    const {title} = c.req.valid('param')
-    const readableTitle = transformParam(title);
-    
-    const session = await prisma.session.findFirst({
-      where: {
-        title: readableTitle,
-      },
-      include: {
-        club: {
-          select: {
-            title: true
-          }
-        }
+  .get(
+    '/:title',
+    zValidator('param', z.object({ title: z.string() })),
+    async (c) => {
+      const { title } = c.req.valid('param');
+      const readableTitle = transformParam(title);
+
+      const session = await prisma.session.findFirst({
+        where: {
+          title: readableTitle,
+        },
+        include: {
+          club: {
+            select: {
+              title: true,
+            },
+          },
+        },
+      });
+
+      console.log('session data', session);
+
+      if (!session) {
+        return c.json({ error: 'Failed to get session' }, 404);
       }
-    });
 
-    console.log('session data', session);
-
-    if (!session) {
-      return c.json({ error: 'Failed to get session' }, 404);
-    }
-
-    return c.json({ data: session });
-  })
+      return c.json({ data: session });
+    },
+  )
   //Creates a new session with a book object
   .post(
     '/create',
-    zValidator('json', sessionSchema, (result, c) => {
+    zValidator('form', sessionSchema, (result, c) => {
       if (!result.success) {
-        return c.text('Invalid input', 400);
+        console.log('zod error', result.error);
+        return c.text('Invalid input!!!', 400);
       }
     }),
     async (c) => {
-      const formData = await c.req.formData();
-      const epubFile = formData.get('book') as File;
-      const clubId = formData.get('clubId') as string;
-      const clubMemberId = formData.get('clubMemberId') as string;
+      const { book: epubFile, clubId, clubMemberId } = c.req.valid('form');
+
+      console.log(
+        'epubFile, clubId, clubMemberId',
+        epubFile,
+        '\n',
+        clubId,
+        '\n',
+        clubMemberId,
+      );
 
       if (!epubFile) {
         return c.json({ error: 'Epub file is required' }, 400);
@@ -77,6 +90,8 @@ const sessionRouter = app
           },
         });
 
+        console.log('new sesison', newSession);
+
         const newBook = await tx.book.create({
           data: {
             title: bookMetadata.title ?? '',
@@ -89,6 +104,8 @@ const sessionRouter = app
             clubId: clubId,
           },
         });
+
+        console.log('new book', newBook);
 
         const updatedSession = await tx.session.update({
           where: {
