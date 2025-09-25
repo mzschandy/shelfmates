@@ -6,9 +6,9 @@ import {
   SessionWithAnnotation,
   useReader,
 } from "@/hooks/useReader";
-import ePub, { Book } from "epubjs";
-import Url from "epubjs/types/utils/url";
+import ePub, { Book } from "@shelfmates/epubjs";
 import { useEffect, useRef } from "react";
+import { useEventListener } from "usehooks-ts";
 
 const fileToEpub = async (file: File) => {
   const data = await file.arrayBuffer();
@@ -22,15 +22,14 @@ export default function EbookReader({
   session: SessionWithAnnotation & SessionData;
   bookUrl: string;
 }) {
-  const ebookViewerRef = useRef<HTMLDivElement | null>(null);
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const renditionRef = useRef<any>(null);
-  console.log("book url", bookUrl);
 
   useEffect(() => {
     const loadBook = async () => {
       if (viewerRef.current) {
-        console.log("ref", viewerRef.current);
+        viewerRef.current.innerHTML = "";
+
         const filename = decodeURIComponent(
           /\/([^/]*\.epub)$/i.exec(bookUrl)?.[1] ?? "",
         );
@@ -39,8 +38,11 @@ export default function EbookReader({
           .then((blob) => fileToEpub(new File([blob], filename)));
 
         renditionRef.current = book.renderTo(viewerRef.current, {
-          width: "600px",
-          height: "400px",
+          width: "100%",
+          height: "600px",
+          flow: "paginated",
+          manager: "default",
+          allowScriptedContent: true,
         });
         renditionRef.current.display();
       }
@@ -48,5 +50,16 @@ export default function EbookReader({
     loadBook();
   }, [bookUrl]);
 
-  return <div id="viewer" ref={viewerRef}></div>;
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (!renditionRef.current) return;
+    if (e.key === "ArrowRight") {
+      renditionRef.current.next();
+    } else if (e.key === "ArrowLeft") {
+      renditionRef.current.prev();
+    }
+  };
+
+  useEventListener("keydown", handleKeyDown);
+
+  return <div tabIndex={0} id="viewer" ref={viewerRef}></div>;
 }

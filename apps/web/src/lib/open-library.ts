@@ -63,7 +63,9 @@ export const getBookQuery = async (
     title: title.toLocaleLowerCase(),
     author: author.toLocaleLowerCase(),
   });
-  const data = await fetch(`${BASE_URL}/search.json?q=${params}`);
+  // console.log("book query search params", params);
+  // console.log("book query url", `${BASE_URL}/search.json?q=${params}`);
+  const data = await fetch(`${BASE_URL}/search.json?${params}`);
   const response = data.json();
   return response;
 };

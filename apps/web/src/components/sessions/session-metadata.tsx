@@ -3,11 +3,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../ui/button";
 import { getBookContent, getBookQuery } from "@/lib/open-library";
+import Link from "next/link";
 
 export interface BookProps {
   title: string;
   author: string;
   description?: string;
+  sessionId: string;
 }
 
 export default function SessionMetadata({
@@ -55,7 +57,9 @@ export default function SessionMetadata({
           <div className="w-[200px] h-[310px] bg-gray-600"></div>
         </div>
         <div className="mt-2">
-          <Button className="w-full">Read</Button>
+          <Link href={`/reader/${bookProps.sessionId}`}>
+            <Button className="w-full">Read</Button>
+          </Link>
         </div>
       </div>
       <div className="ml-8">

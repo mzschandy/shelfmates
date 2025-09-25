@@ -1,8 +1,5 @@
-import Epub, { Book } from "epubjs";
 import { serverClient } from "@/utils/server";
 import EbookReader from "@/components/reader/ebook-reader";
-
-// type ReaderSessionResponse = { error: string } | {data: }
 
 const getReaderSession = async (sessionId: string) => {
   const res = await serverClient.api.reader[":id"].$get({
@@ -32,17 +29,9 @@ export default async function ReaderPage({
   const { id } = await params;
   const {session} = await getReaderSession(id);
   console.log("readerSession", session.data);
-  // const bookUrl = readerSession?.data?.epubUrl;
 
-  // if (!bookUrl) {
-  //   throw new Error("error");
-  // }
-  // const book = new Book(bookUrl.signedUrl);
-  // const rendition = book.renderTo('area', {width: 600, height: 400})
-  // const displayed = rendition.display();
   return (
     <div>
-      <div>This is the reader</div>
        <EbookReader session={session.data.session} bookUrl={session.data.epubUrl.signedUrl} />
     </div>
   );
