@@ -4,8 +4,9 @@ import z from 'zod';
 import { prisma } from '@shelfmates/db';
 import { SessionService } from './session.service.js';
 import { transformParam } from '@/utils/transform-param.util.js';
+import { getSupabase, type Env } from '@/middleware/auth.middleware.js';
 
-const app = new Hono();
+const app = new Hono<Env>();
 const sessionService = new SessionService();
 
 const epubFileSchema = z.instanceof(File);
@@ -27,10 +28,13 @@ const sessionRouter = app
     async (c) => {
       const { title } = c.req.valid('param');
       const readableTitle = transformParam(title);
-
+      console.log('readable title', readableTitle);
       const session = await prisma.session.findFirst({
         where: {
-          title: readableTitle,
+          title: {
+            equals: readableTitle,
+            mode: 'insensitive',
+          },
         },
         include: {
           club: {
@@ -50,6 +54,25 @@ const sessionRouter = app
       return c.json({ data: session });
     },
   )
+  .get(
+    '/book/:id',
+    zValidator('param', z.object({ id: z.string() })),
+    async (c) => {
+      const {id} = c.req.valid('param');
+      
+      const book = await prisma.book.findUnique({
+        where: {
+          id
+        }
+      })
+
+      if (!book) {
+        return c.json({error: 'Failed to get book'}, 404)
+      }
+
+      return c.json({data: book})
+    },
+  )
   //Creates a new session with a book object
   .post(
     '/create',
@@ -60,6 +83,11 @@ const sessionRouter = app
       }
     }),
     async (c) => {
+      const supabase = getSupabase(c);
+
+      if (!(await supabase.auth.getUser())) {
+        return c.json({ error: 'Not authorized' }, 500);
+      }
       const { book: epubFile, clubId, clubMemberId } = c.req.valid('form');
 
       console.log(
@@ -91,6 +119,7 @@ const sessionRouter = app
         });
 
         console.log('new sesison', newSession);
+        const newSessionId = newSession.id;
 
         const newBook = await tx.book.create({
           data: {
@@ -98,7 +127,7 @@ const sessionRouter = app
             author: bookMetadata.creator?.text || 'Unknown',
             description: bookMetadata.description || '',
             bookCoverUrl: bookMetadata.cover || '',
-            filePath: epubFile.name,
+            filePath: newSessionId.concat('_', epubFile.name),
             sessionId: newSession.id,
             uploadedBy: clubMemberId,
             clubId: clubId,
@@ -106,6 +135,12 @@ const sessionRouter = app
         });
 
         console.log('new book', newBook);
+        const { error } = await supabase.storage
+          .from('books')
+          .upload(`${clubId}/${newBook.filePath}`, epubFile);
+        if (error) {
+          throw new Error('could not upload book');
+        }
 
         const updatedSession = await tx.session.update({
           where: {

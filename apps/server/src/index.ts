@@ -9,6 +9,7 @@ import clubRouter from './routes/clubs/index.js';
 import authRouter from './routes/auth/index.js';
 import usersRouter from './routes/users/index.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import readerRouter from './routes/reader/index.js';
 
 const api = new Hono<Env>()
   .basePath('/api')
@@ -22,8 +23,8 @@ const api = new Hono<Env>()
   .route('/auth', authRouter)
   .route('/users', usersRouter)
   .route('/clubs', clubRouter)
-  .route('/sessions', sessionRouter);
-
+  .route('/sessions', sessionRouter)
+  .route('/reader', readerRouter);
 
 serve(
   {

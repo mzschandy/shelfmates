@@ -25,6 +25,21 @@ const getSessionData = async (sessionId: string) => {
   return sessionData.data;
 };
 
+const getBookData = async (bookId: string) => {
+  const res = await serverClient.api.sessions.book[":id"].$get({
+    param: {
+      id: bookId
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to get book data')
+  }
+
+  const bookData = await res.json();
+  return bookData.data;
+}
+
 export default async function SessionPage({
   params,
 }: {
@@ -33,7 +48,9 @@ export default async function SessionPage({
   const { sessionId } = await params;
   console.log("session id", sessionId);
   const sessionData = await getSessionData(sessionId);
+  const bookData = await getBookData(sessionData.bookId ?? '');
   console.log("sess data", sessionData);
+  console.log('book data', bookData);
   return (
     <div className="p-8">
       <Breadcrumb className="mb-4">
@@ -51,7 +68,7 @@ export default async function SessionPage({
       </Breadcrumb>
       <div className="flex">
         <SessionMetadata
-          bookProps={{ title: "Eragon", author: "Christopher Paolini" }}
+          bookProps={{ title: bookData.title, author: bookData.author, sessionId: sessionData.id }}
         />
       </div>
       <hr className="mt-4" />
