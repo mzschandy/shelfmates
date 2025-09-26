@@ -181,6 +181,7 @@ const readerRouter = app
         },
         update: {
           lastCFI: lastCfi,
+          updatedAt: new Date()
         },
       });
 
