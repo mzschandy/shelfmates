@@ -20,5 +20,8 @@
     "globals": "^16.2.0",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.34.0"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.7.0"
   }
 }
