@@ -10,7 +10,7 @@ export interface NewSessionData {
   clubMemberId: string;
 }
 
-type SessionData = {
+export type SessionData = {
   clubId: string;
   title: string;
   createdAt: string;
@@ -21,7 +21,7 @@ type SessionData = {
 
 type CreateSessionRepsone = { error: string } | { data: SessionData };
 
-export const useCreateSession = (clubId: string) => {
+export const useCreateSession = (clubId: string, clubTitle: string = '') => {
   const router = useRouter();
 
   const createSessionParam = (sessionTitle: string) => {

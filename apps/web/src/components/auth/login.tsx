@@ -6,13 +6,13 @@ import { Label } from "../ui/label";
 import { useSignIn } from "@/hooks/useAuth";
 
 export default function Login() {
-  const { signInMutation } = useSignIn();
+  const { signIn } = useSignIn();
 
   const handleLogin = async (data: FormData) => {
     const email = data.get("email") as string;
     const password = data.get("password") as string;
 
-    signInMutation.mutate({ email, password });
+    signIn({ email, password });
   };
 
   return (

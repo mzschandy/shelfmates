@@ -32,7 +32,7 @@ export const useSignIn = () => {
     },
   });
 
-  return { signInMutation };
+  return { signIn: signInMutation.mutate };
 };
 
 export const useSignUp = () => {
