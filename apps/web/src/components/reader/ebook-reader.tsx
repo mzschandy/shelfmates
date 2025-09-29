@@ -8,8 +8,11 @@ import {
   useReader,
 } from "@/hooks/useReader";
 import ePub, { Book, Rendition } from "@shelfmates/epubjs";
-import { useEffect, useRef } from "react";
+import { Ref, RefObject, useEffect, useRef, useState } from "react";
 import { useDebounceCallback, useEventListener } from "usehooks-ts";
+import { Button } from "../ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTextSelection } from "@/hooks/useTextSelection";
 
 export interface CfiLocation {
   start: {
@@ -46,6 +49,9 @@ export default function EbookReader({
 }) {
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
+  const [rendition, setRendition] = useState<Rendition | null>(null);
+  
+
   const { currentProgress, saveProgress, isLoading } = useBookProgress(
     session.id,
   );
@@ -73,6 +79,7 @@ export default function EbookReader({
           manager: "default",
           allowScriptedContent: true,
         });
+        setRendition(renditionRef.current);
         renditionRef.current.display(currentProgress?.lastCFI ?? undefined);
         book.ready.then(() => {
           renditionRef?.current?.on("keydown", handleKeyDown);
@@ -84,12 +91,19 @@ export default function EbookReader({
 
   useEffect(() => {
     if (!renditionRef.current) return;
+
     renditionRef.current.on("relocated", (location: CfiLocation) => {
       debouncedSaveProgress(location.start.cfi);
     });
+
+    return () =>
+      renditionRef.current?.off("relocated", (location: CfiLocation) => {
+        debouncedSaveProgress(location.start.cfi);
+      });
   });
 
   const handleKeyDown = (e: KeyboardEvent) => {
+    console.log("KEY HIT", e.key);
     if (!renditionRef.current) return;
     if (e.key === "ArrowRight") {
       renditionRef.current.next();
@@ -100,5 +114,50 @@ export default function EbookReader({
 
   useEventListener("keydown", handleKeyDown);
 
-  return <div tabIndex={0} id="viewer" ref={viewerRef}></div>;
+  return (
+    <div className="w-full flex">
+      <div className="bg-red-500">
+        <ChevronLeft />
+      </div>
+      <div className="pane w-full max-w-full overflow-auto bg-blue-500">
+        <div tabIndex={0} id="viewer" className="" ref={viewerRef}></div>
+        <TextSelectionMenu rendition={renditionRef} />
+      </div>
+      <div className="bg-red-500">
+        <ChevronRight />
+      </div>
+    </div>
+  );
+}
+
+function TextSelectionMenu({
+  rendition,
+}: {
+  rendition: RefObject<Rendition | null>;
+}) {
+  console.log("renditon from text selection", rendition.current);
+
+  const { selection, setSelection } = useTextSelection(rendition.current)
+
+  if (selection === undefined) {
+    console.log("no selection");
+    return;
+  }
+  console.log("selection from text selection", selection);
+
+  const range = selection?.getRangeAt(0);
+  const boundingBoxRect = range.getBoundingClientRect();
+  if (!range) return null;
+
+  const cons = range.cloneContents();
+  const text = cons?.textContent?.trim();
+  console.log("SELECTED TEXT >>> ", text);
+  if (!text) return null;
+
+  return (
+    <div className="mx-auto rounded-xl">
+      <Button>Highlight</Button>
+      <Button>Annotate</Button>
+    </div>
+  );
 }
