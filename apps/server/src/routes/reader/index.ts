@@ -73,7 +73,6 @@ export type ReaderSession = {
 
 const annotationSchema = z.object({
   id: z.string(),
-  title: z.string(),
   cfiRange: z.string(),
   isPublic: z.boolean(),
   noteText: z.string().optional(),
