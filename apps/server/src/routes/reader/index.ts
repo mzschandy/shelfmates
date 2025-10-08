@@ -71,6 +71,17 @@ export type ReaderSession = {
   annotation: Annotation[];
 } | null;
 
+const annotationSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  cfiRange: z.string(),
+  isPublic: z.boolean(),
+  noteText: z.string().optional(),
+  type: z.enum(['HIGHLIGHT', 'NOTE']),
+  profileId: z.string(),
+  sessionId: z.string(),
+});
+
 const readerRouter = app
   .use(protectedRouteMiddleware)
   .get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) => {
@@ -121,6 +132,33 @@ const readerRouter = app
       return c.json({ data: progress });
     },
   )
+  .get('/:id/annotations/all', async (c) => {
+    const session = c.get('session');
+
+    const annotations = await prisma.annotation.findMany({
+      where: {
+        isPublic: true,
+        sessionId: session?.id,
+      },
+    });
+
+    return c.json({ data: annotations });
+  })
+  .get('/:id/annotations', async (c) => {
+    const session = c.get('session');
+    const supabase = getSupabase(c);
+
+    const { data, error } = await supabase.auth.getUser();
+
+    const annotations = await prisma.annotation.findMany({
+      where: {
+        sessionId: session?.id,
+        profileId: data?.user?.id,
+      },
+    });
+
+    return c.json({ data: annotations });
+  })
   .post(
     '/:id/progress',
     zValidator('json', z.object({ id: z.string(), lastCfi: z.string() })),
@@ -150,6 +188,42 @@ const readerRouter = app
 
       return c.json({ data: updatedProgress });
     },
-  );
+  )
+  .post('/:id/annotations', zValidator('form', annotationSchema), async (c) => {
+    const { id, profileId, sessionId, cfiRange, isPublic, noteText, type } =
+      c.req.valid('form');
+
+    let newAnnotation;
+
+    if (type === 'HIGHLIGHT') {
+      newAnnotation = await prisma.annotation.create({
+        data: {
+          profileId,
+          sessionId,
+          cfiRange,
+          isPublic,
+          type: 'HIGHLIGHT',
+        },
+      });
+    }
+    if (type === 'NOTE') {
+      newAnnotation = await prisma.annotation.create({
+        data: {
+          sessionId,
+          profileId,
+          cfiRange,
+          noteText,
+          isPublic,
+          type: 'HIGHLIGHT',
+        },
+      });
+    }
+
+    if (!newAnnotation) {
+      return c.json({ error: 'Error creating annotation' }, 500);
+    }
+
+    return c.json({ data: newAnnotation }, 201);
+  });
 
 export default readerRouter;
