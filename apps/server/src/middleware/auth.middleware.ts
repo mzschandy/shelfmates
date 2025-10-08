@@ -7,6 +7,7 @@ import {
   type CookieOptions,
 } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { ReaderSession } from '@/routes/reader/index.js';
 
 export const getSupabase = (c: Context<Env>) => {
   return c.var.supabase as SupabaseClient;
@@ -20,6 +21,7 @@ type SupabaseEnv = {
 export type Env = {
   Variables: {
     supabase: SupabaseClient;
+    session: ReaderSession;
   };
 };
 
