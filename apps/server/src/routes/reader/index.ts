@@ -56,6 +56,7 @@ const protectedRouteMiddleware = createMiddleware<Env>(async (c, next) => {
   }
 
   c.set('session', session);
+  c.set('profileId', data.user.id);
   await next();
 });
 
@@ -72,12 +73,10 @@ export type ReaderSession = {
 } | null;
 
 const annotationSchema = z.object({
-  id: z.string(),
   cfiRange: z.string(),
   isPublic: z.boolean(),
   noteText: z.string().optional(),
   type: z.enum(['HIGHLIGHT', 'NOTE']),
-  profileId: z.string(),
   sessionId: z.string(),
 });
 
@@ -188,10 +187,10 @@ const readerRouter = app
       return c.json({ data: updatedProgress });
     },
   )
-  .post('/:id/annotations', zValidator('form', annotationSchema), async (c) => {
-    const { id, profileId, sessionId, cfiRange, isPublic, noteText, type } =
-      c.req.valid('form');
-
+  .post('/:id/annotations', zValidator('json', annotationSchema), async (c) => {
+    const { sessionId, cfiRange, isPublic, noteText, type } =
+      c.req.valid('json');
+    const profileId = c.get('profileId');
     let newAnnotation;
 
     if (type === 'HIGHLIGHT') {
@@ -213,7 +212,7 @@ const readerRouter = app
           cfiRange,
           noteText,
           isPublic,
-          type: 'HIGHLIGHT',
+          type: 'NOTE',
         },
       });
     }
@@ -221,6 +220,8 @@ const readerRouter = app
     if (!newAnnotation) {
       return c.json({ error: 'Error creating annotation' }, 500);
     }
+
+    console.log('new annotation', newAnnotation);
 
     return c.json({ data: newAnnotation }, 201);
   });

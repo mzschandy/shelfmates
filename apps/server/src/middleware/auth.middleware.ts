@@ -22,6 +22,7 @@ export type Env = {
   Variables: {
     supabase: SupabaseClient;
     session: ReaderSession;
+    profileId: string;
   };
 };
 
