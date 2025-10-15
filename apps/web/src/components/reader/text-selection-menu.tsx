@@ -1,5 +1,13 @@
 import { Rendition } from "@shelfmates/epubjs";
-import { ReactNode, RefObject, useCallback, useRef, useState } from "react";
+import {
+  ReactNode,
+  RefObject,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "../ui/button";
 import { useTextSelection } from "@/hooks/useTextSelection";
 import {
@@ -8,6 +16,7 @@ import {
   LayoutAnchorPosition,
 } from "../context-view";
 import { AnnotationType, useAnnotations } from "@/hooks/useAnnotations";
+import { Textarea } from "../ui/textarea";
 
 type TextSelectionOverlayProps = {
   show: boolean;
@@ -31,14 +40,19 @@ function TextSelectionOverlay({
       }}
       onClick={onHide}
     >
-      <div style={{ position: "relative", zIndex: 1000 }}>{children}</div>
+      <div
+        style={{ position: "relative", zIndex: 1000 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
     </div>
   );
 }
 
 export default function TextSelectionMenuRenderer({
   rendition,
-  sessionId
+  sessionId,
 }: {
   rendition: RefObject<Rendition | null>;
   sessionId: string;
@@ -51,13 +65,20 @@ export default function TextSelectionMenuRenderer({
     rendition.current,
     renditionWindow,
   );
-  const {saveAnnotation, annotationsForUser, isLoading, isUserAnnotationsLoading} = useAnnotations(sessionId);
+  const {
+    saveAnnotation,
+    annotationsForUser,
+    isLoading,
+    isUserAnnotationsLoading,
+  } = useAnnotations(sessionId);
+  const [annotation, setAnnotation] = useState(false);
 
   if (selection === undefined) {
     return;
   }
 
   console.log("selection", selection);
+  console.log("existing annotations", annotationsForUser);
 
   const element = getRenditionView()?.[0].element as HTMLElement;
   const range = selection?.getRangeAt(0);
@@ -82,8 +103,7 @@ export default function TextSelectionMenuRenderer({
   };
 
   const rangeToCfi = () => {
-    const cfiRange = getRenditionView()?.[0].contents.cfiFromRange(range);
-    return cfiRange;
+    return getRenditionView()?.[0].contents.cfiFromRange(range);
   };
 
   const onHighlight = () => {
@@ -92,7 +112,25 @@ export default function TextSelectionMenuRenderer({
     rendition.current?.annotations.highlight(cfiRange, {}, (e) => {
       console.log("highlight clicked", e.target);
     });
-    saveAnnotation({cfiRange, isPublic: true, type: AnnotationType.HIGHLIGHT})
+    saveAnnotation({
+      cfiRange,
+      isPublic: true,
+      type: AnnotationType.HIGHLIGHT,
+    });
+  };
+
+  const onAnnotation = (noteText: string) => {
+    const cfiRange = rangeToCfi();
+    console.log("cfi", cfiRange);
+    rendition.current?.annotations.highlight(cfiRange, {}, (e) => {
+      console.log("annotation clicked", e.target);
+    });
+    saveAnnotation({
+      cfiRange,
+      isPublic: true,
+      noteText,
+      type: AnnotationType.NOTE,
+    });
   };
 
   if (!text) return;
@@ -106,7 +144,10 @@ export default function TextSelectionMenuRenderer({
           viewRect={element.getBoundingClientRect()}
           selection={{ text, range }}
           onHighlight={onHighlight}
+          onAnnotate={onAnnotation}
           hide={hideMenu}
+          annotation={annotation}
+          setAnnotation={setAnnotation}
         />
       </TextSelectionOverlay>
     </>
@@ -119,8 +160,10 @@ type TextSelectionMenuProps = {
   containerRect: DOMRect;
   viewRect: DOMRect;
   onHighlight: () => void;
-  onAnnotate?: (sel: { text: string; range: Range | null }) => void;
+  onAnnotate: (noteText: string) => void;
   hide: () => void;
+  annotation: boolean;
+  setAnnotation: React.Dispatch<SetStateAction<boolean>>;
 };
 
 function TextSelectionMenu({
@@ -131,8 +174,10 @@ function TextSelectionMenu({
   hide,
   onHighlight,
   onAnnotate,
+  annotation,
+  setAnnotation,
 }: TextSelectionMenuProps) {
-  const ref = useRef(null);
+  const ref = useRef<HTMLTextAreaElement>(null);
   const [width, setWidth] = useState(0);
   const [height, setHeight] = useState(0);
 
@@ -147,6 +192,17 @@ function TextSelectionMenu({
     onHighlight();
     hide();
   };
+
+  const handleAnnotation = () => {
+    const text = ref.current?.value;
+    if (!text) {
+      return;
+    }
+    onAnnotate(text);
+    setAnnotation(false);
+    hide();
+  };
+
   return (
     <div
       ref={(el) => {
@@ -172,8 +228,27 @@ function TextSelectionMenu({
       }}
       tabIndex={-1}
     >
-      <Button onClick={handleHighlight}>Highlight</Button>
-      <Button>Annotate</Button>
+      {annotation ? (
+        <div className="bg-gray-500">
+          <div>
+            <Textarea ref={ref} />
+          </div>
+          <div>
+            <Button
+              onClick={() => {
+                handleAnnotation();
+              }}
+            >
+              Submit
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <Button onClick={handleHighlight}>Highlight</Button>
+          <Button onClick={() => setAnnotation(true)}>Annotate</Button>
+        </div>
+      )}
     </div>
   );
 }
