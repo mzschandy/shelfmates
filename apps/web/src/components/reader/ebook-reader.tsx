@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDebounceCallback, useEventListener } from "usehooks-ts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import TextSelectionMenuRenderer from "./text-selection-menu";
+import { useAnnotations } from "@/hooks/useAnnotations";
 
 export interface CfiLocation {
   start: {
@@ -47,6 +48,9 @@ export default function EbookReader({
   const [rendition, setRendition] = useState<Rendition | null>(null);
 
   const { currentProgress, saveProgress, isLoading } = useBookProgress(
+    session.id,
+  );
+  const { annotationsForUser, isUserAnnotationsLoading } = useAnnotations(
     session.id,
   );
 
@@ -96,6 +100,21 @@ export default function EbookReader({
       });
   });
 
+  useEffect(() => {
+    if (!renditionRef.current) return;
+
+    annotationsForUser?.forEach((annotation) => {
+      rendition?.annotations.add(
+        "highlight",
+        annotation.cfiRange,
+        undefined,
+        undefined,
+        undefined,
+        { fill: "yellow", "fill-opacity": "0.5" },
+      );
+    });
+  }, [annotationsForUser, rendition]);
+
   const handleKeyDown = (e: KeyboardEvent) => {
     console.log("KEY HIT", e.key);
     if (!renditionRef.current) return;
@@ -106,12 +125,22 @@ export default function EbookReader({
     }
   };
 
+  const handleLeftClick = () => {
+    if (!renditionRef.current) return;
+    renditionRef.current.prev();
+  };
+
+  const handleRightClick = () => {
+    if (!renditionRef.current) return;
+    renditionRef.current.next();
+  };
+
   useEventListener("keydown", handleKeyDown);
 
   return (
     <div className="w-full flex">
       <div className="bg-red-500">
-        <ChevronLeft />
+        <ChevronLeft onClick={handleLeftClick} />
       </div>
       <div className="pane w-full max-w-full overflow-auto bg-blue-500">
         <div tabIndex={0} id="viewer" className="" ref={viewerRef}></div>
@@ -121,7 +150,7 @@ export default function EbookReader({
         />
       </div>
       <div className="bg-red-500">
-        <ChevronRight />
+        <ChevronRight onClick={handleRightClick} />
       </div>
     </div>
   );
