@@ -191,30 +191,62 @@ const readerRouter = app
     const { sessionId, cfiRange, isPublic, noteText, type } =
       c.req.valid('json');
     const profileId = c.get('profileId');
+    const existingAnnotation = await prisma.annotation.findFirst({
+      where: {
+        cfiRange,
+        profileId,
+        sessionId,
+      },
+    });
     let newAnnotation;
 
-    if (type === 'HIGHLIGHT') {
-      newAnnotation = await prisma.annotation.create({
-        data: {
-          profileId,
-          sessionId,
-          cfiRange,
-          isPublic,
-          type: 'HIGHLIGHT',
-        },
-      });
-    }
-    if (type === 'NOTE') {
-      newAnnotation = await prisma.annotation.create({
-        data: {
-          sessionId,
-          profileId,
-          cfiRange,
-          noteText,
-          isPublic,
-          type: 'NOTE',
-        },
-      });
+    if (existingAnnotation) {
+      if (type === 'HIGHLIGHT') {
+        newAnnotation = await prisma.annotation.update({
+          where: {
+            id: existingAnnotation.id,
+          },
+          data: {
+            isPublic,
+            cfiRange,
+          },
+        });
+      }
+      if (type === 'NOTE') {
+        newAnnotation = await prisma.annotation.update({
+          where: {
+            id: existingAnnotation.id,
+          },
+          data: {
+            isPublic,
+            noteText,
+          },
+        });
+      }
+    } else {
+      if (type === 'HIGHLIGHT') {
+        newAnnotation = await prisma.annotation.create({
+          data: {
+            profileId,
+            sessionId,
+            cfiRange,
+            isPublic,
+            type: 'HIGHLIGHT',
+          },
+        });
+      }
+      if (type === 'NOTE') {
+        newAnnotation = await prisma.annotation.create({
+          data: {
+            sessionId,
+            profileId,
+            cfiRange,
+            noteText,
+            isPublic,
+            type: 'NOTE',
+          },
+        });
+      }
     }
 
     if (!newAnnotation) {
