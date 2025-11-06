@@ -17,6 +17,7 @@ import {
 } from "../context-view";
 import { AnnotationType, useAnnotations } from "@/hooks/useAnnotations";
 import { Textarea } from "../ui/textarea";
+import { $Enums, Annotation } from "@shelfmates/db";
 
 type TextSelectionOverlayProps = {
   show: boolean;
@@ -71,7 +72,7 @@ export default function TextSelectionMenuRenderer({
     isLoading,
     isUserAnnotationsLoading,
   } = useAnnotations(sessionId);
-  const [annotation, setAnnotation] = useState(false);
+  const [isAnnotating, setIsAnnotating] = useState(false);
 
   if (selection === undefined) {
     return;
@@ -79,7 +80,6 @@ export default function TextSelectionMenuRenderer({
 
   console.log("selection", selection);
   console.log("existing annotations", annotationsForUser);
-
   const element = getRenditionView()?.[0].element as HTMLElement;
   const range = selection?.getRangeAt(0);
   if (!range) return;
@@ -120,6 +120,7 @@ export default function TextSelectionMenuRenderer({
   };
 
   const onAnnotation = (noteText: string) => {
+    console.log('on annotation!')
     const cfiRange = rangeToCfi();
     console.log("cfi", cfiRange);
     rendition.current?.annotations.highlight(cfiRange, {}, (e) => {
@@ -132,6 +133,9 @@ export default function TextSelectionMenuRenderer({
       type: AnnotationType.NOTE,
     });
   };
+
+  const cfiCheck = rangeToCfi();
+  const existingAnnotation = annotationsForUser?.find((a) => a.cfiRange === cfiCheck);
 
   if (!text) return;
 
@@ -146,8 +150,10 @@ export default function TextSelectionMenuRenderer({
           onHighlight={onHighlight}
           onAnnotate={onAnnotation}
           hide={hideMenu}
-          annotation={annotation}
-          setAnnotation={setAnnotation}
+          annotation={existingAnnotation}
+          isAnnotating={isAnnotating}
+          setIsAnnotating={setIsAnnotating}
+          rendition={rendition}
         />
       </TextSelectionOverlay>
     </>
@@ -162,8 +168,20 @@ type TextSelectionMenuProps = {
   onHighlight: () => void;
   onAnnotate: (noteText: string) => void;
   hide: () => void;
-  annotation: boolean;
-  setAnnotation: React.Dispatch<SetStateAction<boolean>>;
+  annotation: {
+    sessionId: string;
+    createdAt: string;
+    id: string;
+    isPublic: boolean | null;
+    profileId: string;
+    updatedAt: string | null;
+    type: $Enums.AnnotationType;
+    cfiRange: string;
+    noteText: string | null;
+} | undefined;
+  isAnnotating: boolean;
+  setIsAnnotating: React.Dispatch<SetStateAction<boolean>>;
+  rendition: RefObject<Rendition | null>
 };
 
 function TextSelectionMenu({
@@ -175,7 +193,9 @@ function TextSelectionMenu({
   onHighlight,
   onAnnotate,
   annotation,
-  setAnnotation,
+  isAnnotating,
+  setIsAnnotating,
+  rendition
 }: TextSelectionMenuProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [width, setWidth] = useState(0);
@@ -187,6 +207,7 @@ function TextSelectionMenu({
   );
   // no custom line height and the origin is keyword, e.g. 'normal'.
   const lineHeight = isNaN(_lineHeight) ? anchorRect.height : _lineHeight * 1;
+  console.log('is existing annotation?', annotation)
 
   const handleHighlight = () => {
     onHighlight();
@@ -199,7 +220,7 @@ function TextSelectionMenu({
       return;
     }
     onAnnotate(text);
-    setAnnotation(false);
+    setIsAnnotating(false);
     hide();
   };
 
@@ -228,10 +249,10 @@ function TextSelectionMenu({
       }}
       tabIndex={-1}
     >
-      {annotation ? (
+      {isAnnotating || annotation ? (
         <div className="bg-gray-500">
           <div>
-            <Textarea ref={ref} />
+            <Textarea ref={ref} defaultValue={annotation?.noteText ?? ''} />
           </div>
           <div>
             <Button
@@ -246,7 +267,7 @@ function TextSelectionMenu({
       ) : (
         <div>
           <Button onClick={handleHighlight}>Highlight</Button>
-          <Button onClick={() => setAnnotation(true)}>Annotate</Button>
+          <Button onClick={() => setIsAnnotating(true)}>Annotate</Button>
         </div>
       )}
     </div>
