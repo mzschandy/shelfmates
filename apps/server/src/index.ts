@@ -24,7 +24,8 @@ const api = new Hono<Env>()
   .route('/users', usersRouter)
   .route('/clubs', clubRouter)
   .route('/sessions', sessionRouter)
-  .route('/reader', readerRouter);
+  .route('/reader', readerRouter)
+  .get('/health', (c) => c.text('shelfmates api is healthy!'));
 
 serve(
   {
