@@ -8,7 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import { useDebounceCallback, useEventListener } from "usehooks-ts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import TextSelectionMenuRenderer from "./text-selection-menu";
-import { useAnnotations } from "@/hooks/useAnnotations";
+import { AnnotationData, useAnnotations } from "@/hooks/useAnnotations";
+import { Annotation } from "@shelfmates/db";
 
 export interface CfiLocation {
   start: {
@@ -46,6 +47,9 @@ export default function EbookReader({
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const [rendition, setRendition] = useState<Rendition | null>(null);
+  const [editingAnnotation, setEditingAnnotation] = useState<Annotation | null>(
+    null,
+  );
 
   const { currentProgress, saveProgress, isLoading } = useBookProgress(
     session.id,
@@ -103,6 +107,20 @@ export default function EbookReader({
   useEffect(() => {
     if (!renditionRef.current) return;
 
+    renditionRef.current.on("markClicked", (cfiRange, data) => {
+      const annotation = annotationsForUser?.find(
+        (a) => a.cfiRange === cfiRange,
+      );
+      if (annotation && annotation.type === "NOTE") {
+        console.log('found note type annotation!');
+        setEditingAnnotation(annotation);
+      }
+    });
+  }, [annotationsForUser]);
+
+  useEffect(() => {
+    if (!renditionRef.current) return;
+
     annotationsForUser?.forEach((annotation) => {
       rendition?.annotations.add(
         "highlight",
@@ -118,6 +136,7 @@ export default function EbookReader({
   const handleKeyDown = (e: KeyboardEvent) => {
     console.log("KEY HIT", e.key);
     if (!renditionRef.current) return;
+
     if (e.key === "ArrowRight") {
       renditionRef.current.next();
     } else if (e.key === "ArrowLeft") {
@@ -147,6 +166,8 @@ export default function EbookReader({
         <TextSelectionMenuRenderer
           rendition={renditionRef}
           sessionId={session.id}
+          editingAnnotation={editingAnnotation}
+          setEditingAnnotation={setEditingAnnotation}
         />
       </div>
       <div className="bg-red-500">

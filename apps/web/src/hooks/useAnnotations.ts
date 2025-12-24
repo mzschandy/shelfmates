@@ -7,7 +7,7 @@ export enum AnnotationType {
   NOTE = "NOTE",
 }
 
-type AnnotationData = {
+export type AnnotationData = {
   createdAt: string;
   id: string;
   sessionId: string;
@@ -22,7 +22,7 @@ type AnnotationData = {
 export type AnnotationMutationData = {
   cfiRange: string;
   noteText?: string;
-  isPublic: boolean;
+  isPublic?: boolean;
   type: AnnotationType;
 };
 
@@ -46,12 +46,15 @@ export const useAnnotations = (sessionId: string) => {
     },
   });
 
-  const { data: annotationsForUser, isLoading: isUserAnnotationsLoading } =
-    useQuery({
-      queryKey: ["reader", sessionId, "user", "annotations"],
-      queryFn: async () => {
-        const res = await client.api.reader[":id"].annotations.$get({
-          param: {
+  const {
+    data: annotationsForUser,
+    isLoading: isUserAnnotationsLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["reader", sessionId, "user", "annotations"],
+    queryFn: async () => {
+      const res = await client.api.reader[":id"].annotations.$get({
+        param: {
             id: sessionId,
           },
         });
@@ -86,10 +89,46 @@ export const useAnnotations = (sessionId: string) => {
 
       return data.data;
     },
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  const updateAnnotationMutation = useMutation({
+    mutationFn: async (annotationData: {
+      annotationId: string;
+      noteText: string;
+      type: AnnotationType;
+    }) => {
+      const { annotationId, noteText, type } = annotationData;
+
+      const res = await client.api.reader[":id"].annotations.$post({
+        param: {
+          id: sessionId,
+        },
+        json: {
+          noteText,
+          sessionId,
+          annotationId,
+          type
+        },
+      });
+
+      const data = await res.json();
+      if ("error" in data) {
+        throw new Error();
+      }
+
+      return data.data;
+    },
+    onSuccess: () => {
+      refetch();
+    }
   });
 
   return {
     saveAnnotation: createAnnotationMutation.mutate,
+    updateAnnotation: updateAnnotationMutation.mutate,
     allAnnotations: allAnnotations,
     annotationsForUser: annotationsForUser,
     isLoading,

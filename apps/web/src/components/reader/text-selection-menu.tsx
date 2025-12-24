@@ -54,9 +54,13 @@ function TextSelectionOverlay({
 export default function TextSelectionMenuRenderer({
   rendition,
   sessionId,
+  editingAnnotation,
+  setEditingAnnotation,
 }: {
   rendition: RefObject<Rendition | null>;
   sessionId: string;
+  editingAnnotation: Annotation | null;
+  setEditingAnnotation: React.Dispatch<SetStateAction<Annotation | null>>;
 }) {
   const getRenditionView = useCallback(() => {
     return rendition.current?.views()._views;
@@ -71,10 +75,11 @@ export default function TextSelectionMenuRenderer({
     annotationsForUser,
     isLoading,
     isUserAnnotationsLoading,
+    updateAnnotation,
   } = useAnnotations(sessionId);
   const [isAnnotating, setIsAnnotating] = useState(false);
 
-  if (selection === undefined) {
+  if (selection === undefined && !editingAnnotation) {
     return;
   }
 
@@ -82,23 +87,26 @@ export default function TextSelectionMenuRenderer({
   console.log("existing annotations", annotationsForUser);
   const element = getRenditionView()?.[0].element as HTMLElement;
   const range = selection?.getRangeAt(0);
-  if (!range) return;
+  if (!range && !editingAnnotation) return;
 
-  const boundingBoxRect = range.getBoundingClientRect();
-  const cons = range.cloneContents();
+  const boundingBoxRect = range?.getBoundingClientRect();
+  const cons = range?.cloneContents();
   const text = cons?.textContent?.trim();
 
-  const rects = [...range.getClientRects()].filter((val) =>
+  const rects = [...(range?.getClientRects() ?? [])].filter((val) =>
     Math.round(val.width),
   );
   const anchorRect = rects && rects[0];
   const parentElementRect = element.parentElement!.getBoundingClientRect();
-  if (!anchorRect) return null;
+  if (!anchorRect && !editingAnnotation) return null;
 
   const hideMenu = () => {
     if (selection) {
       selection.removeAllRanges();
       setSelection(undefined);
+    }
+    if (editingAnnotation) {
+      setEditingAnnotation(null);
     }
   };
 
@@ -134,6 +142,14 @@ export default function TextSelectionMenuRenderer({
     });
   };
 
+  const onUpdateAnnotation = (annotationId: string, noteText: string) => {
+    updateAnnotation({
+      annotationId,
+      noteText,
+      type: AnnotationType.NOTE
+    });
+  };
+
   const cfiCheck = rangeToCfi();
   const existingAnnotation = annotationsForUser?.find((a) => a.cfiRange === cfiCheck);
 
@@ -141,16 +157,17 @@ export default function TextSelectionMenuRenderer({
 
   return (
     <>
-      <TextSelectionOverlay show={!!text} onHide={hideMenu}>
+      <TextSelectionOverlay show={!!text || !!editingAnnotation} onHide={hideMenu}>
         <TextSelectionMenu
-          anchorRect={anchorRect}
+          anchorRect={anchorRect ?? new DOMRect(0, 0, 0, 0)}
           containerRect={parentElementRect}
           viewRect={element.getBoundingClientRect()}
           selection={{ text, range }}
           onHighlight={onHighlight}
           onAnnotate={onAnnotation}
+          onUpdateAnnotation={onUpdateAnnotation}
           hide={hideMenu}
-          annotation={existingAnnotation}
+          annotation={editingAnnotation ?? existingAnnotation}
           isAnnotating={isAnnotating}
           setIsAnnotating={setIsAnnotating}
           rendition={rendition}
@@ -161,12 +178,13 @@ export default function TextSelectionMenuRenderer({
 }
 
 type TextSelectionMenuProps = {
-  selection: { text: string; range: Range | null };
+  selection: { text: string; range: Range | null | undefined };
   anchorRect: DOMRect;
   containerRect: DOMRect;
   viewRect: DOMRect;
   onHighlight: () => void;
   onAnnotate: (noteText: string) => void;
+  onUpdateAnnotation: (annotationId: string, noteText: string) => void;
   hide: () => void;
   annotation: {
     sessionId: string;
@@ -192,6 +210,7 @@ function TextSelectionMenu({
   hide,
   onHighlight,
   onAnnotate,
+  onUpdateAnnotation,
   annotation,
   isAnnotating,
   setIsAnnotating,
@@ -202,9 +221,9 @@ function TextSelectionMenu({
   const [height, setHeight] = useState(0);
 
   const endContainer = selection.range?.startContainer;
-  const _lineHeight = parseFloat(
-    getComputedStyle(endContainer?.parentElement!).lineHeight,
-  );
+  const _lineHeight = endContainer
+    ? parseFloat(getComputedStyle(endContainer?.parentElement!).lineHeight)
+    : 0;
   // no custom line height and the origin is keyword, e.g. 'normal'.
   const lineHeight = isNaN(_lineHeight) ? anchorRect.height : _lineHeight * 1;
   console.log('is existing annotation?', annotation)
@@ -219,7 +238,11 @@ function TextSelectionMenu({
     if (!text) {
       return;
     }
-    onAnnotate(text);
+    if (annotation) {
+      onUpdateAnnotation(annotation.id, text);
+    } else {
+      onAnnotate(text);
+    }
     setIsAnnotating(false);
     hide();
   };

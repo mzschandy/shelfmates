@@ -73,9 +73,10 @@ export type ReaderSession = {
 } | null;
 
 const annotationSchema = z.object({
-  cfiRange: z.string(),
-  isPublic: z.boolean(),
+  cfiRange: z.string().optional(),
+  isPublic: z.boolean().optional(),
   noteText: z.string().optional(),
+  annotationId: z.string().optional(),
   type: z.enum(['HIGHLIGHT', 'NOTE']),
   sessionId: z.string(),
 });
@@ -188,7 +189,7 @@ const readerRouter = app
     },
   )
   .post('/:id/annotations', zValidator('json', annotationSchema), async (c) => {
-    const { sessionId, cfiRange, isPublic, noteText, type } =
+    const { sessionId, cfiRange, isPublic, noteText, type, annotationId } =
       c.req.valid('json');
     const profileId = c.get('profileId');
     const existingAnnotation = await prisma.annotation.findFirst({
@@ -200,11 +201,11 @@ const readerRouter = app
     });
     let newAnnotation;
 
-    if (existingAnnotation) {
+    if (existingAnnotation || annotationId) {
       if (type === 'HIGHLIGHT') {
         newAnnotation = await prisma.annotation.update({
           where: {
-            id: existingAnnotation.id,
+            id: existingAnnotation?.id,
           },
           data: {
             isPublic,
@@ -215,7 +216,7 @@ const readerRouter = app
       if (type === 'NOTE') {
         newAnnotation = await prisma.annotation.update({
           where: {
-            id: existingAnnotation.id,
+            id: existingAnnotation?.id ?? annotationId,
           },
           data: {
             isPublic,
