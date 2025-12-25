@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import z from 'zod';
-import { prisma } from '@shelfmates/db';
+import { prisma, ThreadType } from '@shelfmates/db';
 import { SessionService } from './session.service.js';
 import { transformParam } from '@/utils/transform-param.util.js';
 import { getSupabase, type Env } from '@/middleware/auth.middleware.js';
@@ -103,6 +103,7 @@ const sessionRouter = app
         return c.json({ error: 'Epub file is required' }, 400);
       }
 
+      const chapters = await sessionService.getEpubChapters(epubFile);
       const bookMetadata = await sessionService.extractMetadata(epubFile);
 
       if (!bookMetadata || !bookMetadata.title) {
@@ -119,6 +120,18 @@ const sessionRouter = app
         });
 
         console.log('new sesison', newSession);
+        
+        if (chapters && chapters.length > 0) {
+          await tx.thread.createMany({
+            data: chapters.map((chapter: any) => ({
+              title: chapter.label ? chapter.label.trim() : 'Untitled Chapter',
+              clubId,
+              sessionId: newSession.id,
+              type: ThreadType.SESSION,
+            })),
+          });
+        }
+      
         const newSessionId = newSession.id;
 
         const newBook = await tx.book.create({

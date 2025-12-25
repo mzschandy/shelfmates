@@ -58,5 +58,5 @@ export const useCreateSession = (clubId: string, clubTitle: string = '') => {
     },
   });
 
-  return { createSession: createSessionMutation.mutate };
+  return { createSession: createSessionMutation.mutate, isLoading: createSessionMutation.isPending };
 };

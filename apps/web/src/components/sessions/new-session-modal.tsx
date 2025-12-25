@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   Dialog,
@@ -18,7 +18,7 @@ export default function NewSessionModal({
   clubId: string;
   clubMemberId: string | undefined;
 }) {
-  const {createSession} = useCreateSession(clubId);
+  const { createSession, isLoading } = useCreateSession(clubId);
 
   if (!clubMemberId) {
     return null;
@@ -26,9 +26,9 @@ export default function NewSessionModal({
 
   const handleCreateSession = async (data: FormData) => {
     const epubFile = data.get("book") as File;
-    console.log('epupFile', epubFile)
-    console.log('club id', clubId);
-    createSession({epubFile, clubId, clubMemberId});
+    // console.log("epupFile", epubFile);
+    // console.log("club id", clubId);
+    createSession({ epubFile, clubId, clubMemberId });
   };
 
   return (
@@ -50,9 +50,13 @@ export default function NewSessionModal({
                     <Input id="book" name="book" type="file" required />
                   </div>
                   <div className="flex flex-col gap-2 mt-5">
-                    <Button formAction={handleCreateSession} type="submit">
-                      Create Session
-                    </Button>
+                    {isLoading ? (
+                      <div>Creating Session...</div>
+                    ) : (
+                      <Button formAction={handleCreateSession} type="submit">
+                        Create Session
+                      </Button>
+                    )}
                   </div>
                 </form>
               </div>
