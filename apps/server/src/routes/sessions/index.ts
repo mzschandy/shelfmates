@@ -5,6 +5,7 @@ import { prisma, ThreadType } from '@shelfmates/db';
 import { SessionService } from './session.service.js';
 import { transformParam } from '@/utils/transform-param.util.js';
 import { getSupabase, type Env } from '@/middleware/auth.middleware.js';
+import type EPub from 'epub';
 
 const app = new Hono<Env>();
 const sessionService = new SessionService();
@@ -42,6 +43,8 @@ const sessionRouter = app
               title: true,
             },
           },
+          threads: true,
+          book: {},
         },
       });
 
@@ -58,19 +61,38 @@ const sessionRouter = app
     '/book/:id',
     zValidator('param', z.object({ id: z.string() })),
     async (c) => {
-      const {id} = c.req.valid('param');
-      
+      const { id } = c.req.valid('param');
+
       const book = await prisma.book.findUnique({
         where: {
-          id
-        }
-      })
+          id,
+        },
+      });
 
       if (!book) {
-        return c.json({error: 'Failed to get book'}, 404)
+        return c.json({ error: 'Failed to get book' }, 404);
       }
 
-      return c.json({data: book})
+      return c.json({ data: book });
+    },
+  )
+  .get(
+    '/:id/threads',
+    zValidator('param', z.object({ id: z.string() })),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      console.log('session id', id);
+
+      const threads = await prisma.thread.findMany({
+        where: {
+          sessionId: id,
+        },
+        include: {
+          comments: true
+        }
+      });
+
+      return c.json({ data: threads });
     },
   )
   //Creates a new session with a book object
@@ -120,18 +142,22 @@ const sessionRouter = app
         });
 
         console.log('new sesison', newSession);
-        
+
+        console.log('chapters', chapters);
+
         if (chapters && chapters.length > 0) {
           await tx.thread.createMany({
-            data: chapters.map((chapter: any) => ({
-              title: chapter.label ? chapter.label.trim() : 'Untitled Chapter',
+            data: chapters.map((chapter: EPub.TocElement) => ({
+              title: chapter.title
+                ? chapter.title.trim()
+                : `Chapter ${chapter.level}`,
               clubId,
               sessionId: newSession.id,
               type: ThreadType.SESSION,
             })),
           });
         }
-      
+
         const newSessionId = newSession.id;
 
         const newBook = await tx.book.create({

@@ -10,6 +10,7 @@ import authRouter from './routes/auth/index.js';
 import usersRouter from './routes/users/index.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import readerRouter from './routes/reader/index.js';
+import threadRouter from './routes/threads/index.js';
 
 const api = new Hono<Env>()
   .basePath('/api')
@@ -25,6 +26,7 @@ const api = new Hono<Env>()
   .route('/clubs', clubRouter)
   .route('/sessions', sessionRouter)
   .route('/reader', readerRouter)
+  .route('/threads', threadRouter)
   .get('/health', (c) => c.text('shelfmates api is healthy!'));
 
 serve(
