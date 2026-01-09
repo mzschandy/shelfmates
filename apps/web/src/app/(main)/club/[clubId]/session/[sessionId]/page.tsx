@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import SessionMetadata from "@/components/sessions/session-metadata";
 import { serverClient } from "@/utils/server";
+import Link from "next/link";
 
 const getSessionData = async (sessionId: string) => {
   const res = await serverClient.api.sessions[":title"].$get({
@@ -28,17 +29,32 @@ const getSessionData = async (sessionId: string) => {
 const getBookData = async (bookId: string) => {
   const res = await serverClient.api.sessions.book[":id"].$get({
     param: {
-      id: bookId
-    }
+      id: bookId,
+    },
   });
 
   if (!res.ok) {
-    throw new Error('Failed to get book data')
+    throw new Error("Failed to get book data");
   }
 
   const bookData = await res.json();
   return bookData.data;
-}
+};
+
+const getSessionThreads = async (sessionId: string) => {
+  const res = await serverClient.api.sessions[":id"].threads.$get({
+    param: {
+      id: sessionId,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("failed to get threads");
+  }
+
+  const threadsData = await res.json();
+  return threadsData.data;
+};
 
 export default async function SessionPage({
   params,
@@ -48,9 +64,20 @@ export default async function SessionPage({
   const { sessionId } = await params;
   console.log("session id", sessionId);
   const sessionData = await getSessionData(sessionId);
-  const bookData = await getBookData(sessionData.bookId ?? '');
+  const bookData = await getBookData(sessionData.bookId ?? "");
+  const threadsData = await getSessionThreads(sessionData.id);
+  const threads = sessionData.threads;
+
+  const createParam = () => {
+    const title = sessionData.club.title.toLowerCase().split(" ");
+    if (title.length > 1) {
+      return title.join("-");
+    }
+    return title;
+  };
   console.log("sess data", sessionData);
-  console.log('book data', bookData);
+  console.log("book data", bookData);
+  console.log("threads", threadsData);
   return (
     <div className="p-8">
       <Breadcrumb className="mb-4">
@@ -68,7 +95,11 @@ export default async function SessionPage({
       </Breadcrumb>
       <div className="flex">
         <SessionMetadata
-          bookProps={{ title: bookData.title, author: bookData.author, sessionId: sessionData.id }}
+          bookProps={{
+            title: bookData.title,
+            author: bookData.author,
+            sessionId: sessionData.id,
+          }}
         />
       </div>
       <hr className="mt-4" />
@@ -86,35 +117,21 @@ export default async function SessionPage({
 
           <TabsContent value="threads">
             <div className="flex flex-col mt-2 gap-1">
-              <div className="flex flex-col border border-gray-300 bg-gray-300 rounded-sm p-4 mb-4 cursor-pointer">
-                <div className="text-lg">Hey did you guys like this</div>
-                <div className="text-sm font-bold">Chapter 5</div>
-                <div className="">
-                  Username: This is an initial comment that serves as a preview
-                  of sorts. You are not meant to see the whole thing
-                </div>
-                <div className="text-sm">52 Comments</div>
-              </div>
-              <div className="flex flex-col border border-gray-300 bg-gray-300 rounded-sm p-4 mb-4 cursor-pointer">
-                <div className="text-lg">
-                  Romantic interests, jacob vs edward
-                </div>
-                <div className="text-sm font-bold">General</div>
-                <div className="">
-                  Username: This is an initial comment that serves as a preview
-                  of sorts. You are not meant to see the whole thing
-                </div>
-                <div className="text-sm">52 Comments</div>
-              </div>
-              <div className="flex flex-col border border-gray-300 bg-gray-300 rounded-sm p-4 mb-4 cursor-pointer">
-                <div className="text-lg">the ending</div>
-                <div className="text-sm font-bold">Chapter 27</div>
-                <div className="">
-                  Username: This is an initial comment that serves as a preview
-                  of sorts. You are not meant to see the whole thing
-                </div>
-                <div className="text-sm">52 Comments</div>
-              </div>
+              {threadsData.map((thread) => (
+                <Link
+                  key={thread.id}
+                  href={`/club/${createParam()}/thread/${thread.id}`}
+                  className="flex flex-col border border-gray-300 bg-gray-300 rounded-sm p-4 mb-4 cursor-pointer"
+                >
+                  <div className="text-lg">{thread.title}</div>
+                  <div className="text-sm font-bold">
+                    {thread.description ?? ""}
+                  </div>
+                  {thread.comments.length > 0 ? (
+                    <div className="text-sm">{thread.comments.length} Comments</div>
+                  ): <div className="text-sm">No commments yet</div>}
+                </Link>
+              ))}
             </div>
           </TabsContent>
           <TabsContent value="reviews">
