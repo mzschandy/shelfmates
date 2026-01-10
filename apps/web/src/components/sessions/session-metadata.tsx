@@ -65,7 +65,7 @@ export default function SessionMetadata({
       <div className="ml-8">
         <div className="text-lg font-bold">Description</div>
         <div>
-          {bookData?.description ? bookData.description : bookProps.description}
+          {bookData?.description?.value ?? bookProps.description}
         </div>
       </div>
     </>
