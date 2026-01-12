@@ -11,6 +11,7 @@ import {
 import SessionMetadata from "@/components/sessions/session-metadata";
 import { serverClient } from "@/utils/server";
 import Link from "next/link";
+import NewThreadModal from "@/components/threads/new-thread-modal";
 
 const getSessionData = async (sessionId: string) => {
   const res = await serverClient.api.sessions[":title"].$get({
@@ -78,6 +79,7 @@ export default async function SessionPage({
   console.log("sess data", sessionData);
   console.log("book data", bookData);
   console.log("threads", threadsData);
+  console.log("threads from sessionData", threads);
   return (
     <div className="p-8">
       <Breadcrumb className="mb-4">
@@ -96,8 +98,8 @@ export default async function SessionPage({
       <div className="flex">
         <SessionMetadata
           bookProps={{
-            title: bookData.title,
-            author: bookData.author,
+            title: sessionData?.book?.title ?? "",
+            author: sessionData?.book?.author ?? "",
             sessionId: sessionData.id,
           }}
         />
@@ -111,12 +113,16 @@ export default async function SessionPage({
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
             </TabsList>
             <div>
-              <Button>Add New Thread</Button>
+              <NewThreadModal
+                clubId={sessionData.clubId}
+                sessionId={sessionData.id}
+              />
             </div>
           </div>
 
           <TabsContent value="threads">
             <div className="flex flex-col mt-2 gap-1">
+              {!threadsData.length && <div>No threads yet</div>}
               {threadsData.map((thread) => (
                 <Link
                   key={thread.id}
@@ -128,8 +134,12 @@ export default async function SessionPage({
                     {thread.description ?? ""}
                   </div>
                   {thread.comments.length > 0 ? (
-                    <div className="text-sm">{thread.comments.length} Comments</div>
-                  ): <div className="text-sm">No commments yet</div>}
+                    <div className="text-sm">
+                      {thread.comments.length} Comments
+                    </div>
+                  ) : (
+                    <div className="text-sm">No commments yet</div>
+                  )}
                 </Link>
               ))}
             </div>

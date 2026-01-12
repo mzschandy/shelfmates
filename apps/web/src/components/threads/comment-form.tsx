@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useCreateComment } from '@/hooks/useThreads';
+import { useCreateComment, useThreads } from '@/hooks/useThreads';
 
 interface CommentFormProps {
   threadId: string;
@@ -23,20 +23,21 @@ export const CommentForm = ({
   autoFocus = false,
 }: CommentFormProps) => {
   const [text, setText] = useState('');
-  const createComment = useCreateComment(threadId);
+  // const createComment = useCreateComment(threadId);
+  const {createComment, createCommentIsLoading} = useThreads(threadId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
 
     try {
-      await createComment.mutateAsync({
+      createComment({
         commentText: text,
         parentId,
         clubId,
       });
       setText('');
-      onSuccess?.();
+      // onSuccess?.();
     } catch (error) {
       console.error('Failed to post comment:', error);
     }
@@ -63,10 +64,10 @@ export const CommentForm = ({
         )}
         <button
           type="submit"
-          disabled={createComment.isPending || !text.trim()}
+          disabled={createCommentIsLoading || !text.trim()}
           className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
-          {createComment.isPending ? 'Posting...' : 'Post Comment'}
+          {createCommentIsLoading ? 'Posting...' : 'Post Comment'}
         </button>
       </div>
     </form>
