@@ -50,12 +50,22 @@ const clubRouter = app
             },
           },
           sessions: true,
+          threads: {
+            where: {
+              type: 'GENERAL',
+            },
+            include: {
+              comments: true,
+            }
+          },
         },
       });
 
       if (!club) {
         return c.json({ error: 'Could not retrieve club' }, 404);
       }
+
+      console.log('club data', club)
 
       return c.json({ data: club });
     },
