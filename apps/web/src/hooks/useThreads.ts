@@ -1,5 +1,7 @@
 import { client } from "@/utils/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export interface Comment {
   id: string;
@@ -26,12 +28,30 @@ export interface Thread {
   sessionId: string | null;
 }
 
-export const useThreads = (threadId: string) => {
+export type ThreadMutationType = {
+  title: string;
+  description?: string;
+  clubId: string;
+  sessionId: string;
+  type: string;
+};
+
+export enum ThreadType {
+  GENERAL = "GENERAL",
+  SESSION = "SESSION",
+}
+
+export const useThreads = (threadId?: string) => {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { data: threadData, isLoading } = useQuery({
     queryKey: ["thread", threadId],
     queryFn: async () => {
+      if (!threadId) {
+        throw new Error("Thread ID is required to create a comment");
+      }
+
       const res = await client.api.threads[":id"].$get({
         param: { id: threadId },
       });
@@ -47,8 +67,6 @@ export const useThreads = (threadId: string) => {
     enabled: !!threadId,
   });
 
-  const create
-
   const createCommentMutation = useMutation({
     mutationFn: async ({
       commentText,
@@ -59,6 +77,10 @@ export const useThreads = (threadId: string) => {
       parentId?: string;
       clubId: string;
     }) => {
+      if (!threadId) {
+        throw new Error("Thread ID is required to create a comment");
+      }
+
       const res = await client.api.threads[":id"].comments.$post({
         param: { id: threadId },
         json: { commentText, parentId, clubId },
@@ -73,57 +95,54 @@ export const useThreads = (threadId: string) => {
       return json.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["thread", threadId] });
+      // queryClient.invalidateQueries({ queryKey: ["thread", threadId] });
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error("Something went wrong");
     },
   });
 
   const createThreadMutation = useMutation({
     mutationFn: async ({
-      title, 
+      title,
       description,
       clubId,
       sessionId,
-      type
+      type,
     }: {
       title: string;
       description?: string;
       clubId: string;
-      sessionId: string;
-      type: string;
+      sessionId?: string;
+      type: ThreadType;
     }) => {
-      const res = await client.api.threads[":id"].thread.$post({
-        json: {title, description, clubId, sessionId, type },
+      const res = await client.api.threads.thread.$post({
+        json: { title, description, clubId, sessionId, type },
       });
-    }
-  })
 
-};
-
-export const useCreateComment = (threadId: string) => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      commentText,
-      parentId,
-      clubId,
-    }: {
-      commentText: string;
-      parentId?: string;
-      clubId: string;
-    }) => {
-      const res = await client.api.threads[":id"].comments.$post({
-        param: { id: threadId },
-        json: { commentText, parentId, clubId },
-      });
       const json = await res.json();
+
       if ("error" in json) {
         throw new Error(json.error);
       }
+
       return json.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["thread", threadId] });
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error("Something went wrong");
     },
   });
+
+  return {
+    threadData,
+    threadIsLoading: isLoading,
+    createComment: createCommentMutation.mutate,
+    createCommentIsLoading: createCommentMutation.isPending,
+    createThread: createThreadMutation.mutate,
+    createThreadIsLoading: createThreadMutation.isPending,
+  };
 };

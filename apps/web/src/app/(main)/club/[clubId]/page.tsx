@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import NewSessionModal from "@/components/sessions/new-session-modal";
 import { joinClub } from "./session/actions";
 import { serverClient } from "@/utils/server";
+import NewThreadModal from "@/components/threads/new-thread-modal";
 
 const getLoggedInUser = async () => {
   const res = await serverClient.api.users["current-user"].$get();
@@ -117,7 +118,7 @@ export default async function ClubPage({
 }) {
   const { clubId } = await params;
   // const userId = await getUserId()
-
+  console.log("club id from params", clubId);
   const clubData = await getClubData(clubId);
   const { isLoggedIn, isMember, isAdmin } =
     await getClubPermissionsForUser(clubId);
@@ -136,8 +137,10 @@ export default async function ClubPage({
   console.log("prisma club data", clubData);
   console.log("prisma creator", creator ?? "");
   const { isUser, user: profile } = await getLoggedInUser();
-  const loggedInClubMember = clubData.clubMembers.find((member) => member.profileId === profile.id);
-  console.log('logge din club membver', loggedInClubMember);
+  const loggedInClubMember = clubData.clubMembers.find(
+    (member) => member.profileId === profile.id,
+  );
+  console.log("logge din club membver", loggedInClubMember);
   console.log("prisma profile", profile);
 
   return (
@@ -182,7 +185,10 @@ export default async function ClubPage({
       <div className="mt-4 mb-4 flex justify-between">
         <div className="text-xl">Sessions</div>
         {isAdmin && isUser && (
-          <NewSessionModal clubId={clubData.id} clubMemberId={loggedInClubMember?.id} />
+          <NewSessionModal
+            clubId={clubData.id}
+            clubMemberId={loggedInClubMember?.id}
+          />
         )}
       </div>
       {clubData.sessions.length === 0 ? (
@@ -202,8 +208,21 @@ export default async function ClubPage({
         </div>
       )}
       <div className="mt-4">
+        <div className="text-2xl mt-4">Threads</div>
         {isLoggedIn && isMember ? (
-          <ThreadsLister />
+          <>
+            <NewThreadModal clubId={clubData.id} />
+            {clubData.threads.map((thread) => (
+              <Thread
+                key={thread.id}
+                id={thread.id}
+                clubTitle={clubId}
+                title={thread.title}
+                description={thread.description}
+                comments={thread.comments.length}
+              />
+            ))}
+          </>
         ) : (
           <div className="border rounded-sm border-gray-300 p-4">
             You must be a member of the club to see threads and reviews

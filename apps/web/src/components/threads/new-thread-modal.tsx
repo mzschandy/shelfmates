@@ -9,14 +9,10 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { useThreads } from "@/hooks/useThreads";
+import { ThreadType, useThreads } from "@/hooks/useThreads";
 
-export default function NewThreadModal({ sessionId, clubId }: { sessionId: string, clubId: string }) {
+export default function NewThreadModal({ sessionId, clubId }: { sessionId?: string, clubId: string }) {
   const { createThread, createThreadIsLoading } = useThreads();
-
-  if (!sessionId) {
-    return null;
-  }
 
   const handleCreateThread = async (data: FormData) => {
     const threadTitle = data.get("threadTitle") as string;
@@ -30,7 +26,7 @@ export default function NewThreadModal({ sessionId, clubId }: { sessionId: strin
       description: threadDescription,
       clubId,
       sessionId,
-      type: "SESSION",
+      type: sessionId ? ThreadType.SESSION : ThreadType.GENERAL,
     });
   };
 

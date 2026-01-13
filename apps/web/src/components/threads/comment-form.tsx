@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useCreateComment, useThreads } from '@/hooks/useThreads';
+import { useThreads } from '@/hooks/useThreads';
 
 interface CommentFormProps {
   threadId: string;
