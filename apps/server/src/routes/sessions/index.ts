@@ -127,7 +127,7 @@ const sessionRouter = app
 
       const chapters = await sessionService.getEpubChapters(epubFile);
       const bookMetadata = await sessionService.extractMetadata(epubFile);
-
+      console.log('bookMetadata', bookMetadata);
       if (!bookMetadata || !bookMetadata.title) {
         return c.json({ error: 'Failed to extract metadata' }, 500);
       }
@@ -163,7 +163,7 @@ const sessionRouter = app
         const newBook = await tx.book.create({
           data: {
             title: bookMetadata.title ?? '',
-            author: bookMetadata.creator?.text || 'Unknown',
+            author: bookMetadata.creator || 'Unknown',
             description: bookMetadata.description || '',
             bookCoverUrl: bookMetadata.cover || '',
             filePath: newSessionId.concat('_', epubFile.name),
@@ -172,6 +172,8 @@ const sessionRouter = app
             clubId: clubId,
           },
         });
+
+        throw new Error('could not create book');
 
         console.log('new book', newBook);
         const { error } = await supabase.storage
