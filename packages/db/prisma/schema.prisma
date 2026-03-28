@@ -10,18 +10,18 @@ datasource db {
 }
 
 model Book {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sessionId    String    @map("session_id") @db.Uuid
-  uploadedBy   String    @map("uploaded_by") @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId    String   @map("session_id") @db.Uuid
+  uploadedBy   String   @map("uploaded_by") @db.Uuid
   title        String
   author       String?
   description  String?
-  bookCoverUrl String?   @map("book_cover_url")
-  filePath     String?   @map("file_path")
-  rating       Float?    @db.Real
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  session      Session   @relation("books_session_idTosessions", fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user         Profile   @relation(fields: [uploadedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bookCoverUrl String?  @map("book_cover_url")
+  filePath     String?  @map("file_path")
+  rating       Float?   @db.Real
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user         Profile  @relation(fields: [uploadedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  session      Session  @relation(fields: [sessionId], references: [id])
 
   @@map("books")
 }
@@ -61,16 +61,16 @@ model Club {
 model Comment {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String    @map("user_id") @db.Uuid
-  sessionId   String   @map("session_id") @db.Uuid
-  threadId    String    @map("thread_id") @db.Uuid
+  sessionId   String    @map("session_id") @db.Uuid
+  threadId    String?   @map("thread_id") @db.Uuid
   parentId    String?   @map("parent_id") @db.Uuid
   depth       Int       @default(0)
   commentText String    @map("comment_text")
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
   user        Profile   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  session     Session  @relation(fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  thread      Thread    @relation(fields: [threadId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_thread_id")
+  session     Session   @relation(fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  thread      Thread?   @relation(fields: [threadId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_thread_id")
 
   @@map("comments")
 }
@@ -96,14 +96,14 @@ model Session {
   isActive           Boolean               @default(true) @map("is_active")
   createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   id                 String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  bookId             String?               @map("book_id") @db.Uuid
+  bookId             String?               @unique @map("book_id") @db.Uuid
   clubId             String                @map("club_id") @db.Uuid
   comments           Comment[]
   threads            Thread[]
-  book               Book                  @relation("sessions_book_idTobooks", fields: [bookId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   club               Club                  @relation(fields: [clubId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   userReadingSession UserSessionProgress[] @relation(map: "fk_session_id")
   annotation         Annotation[]          @relation(map: "fk_session_id")
+  Book               Book[]
 
   @@map("sessions")
 }
