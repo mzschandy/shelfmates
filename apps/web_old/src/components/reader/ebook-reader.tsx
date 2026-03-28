@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDebounceCallback, useEventListener } from "usehooks-ts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import TextSelectionMenuRenderer from "./text-selection-menu";
-import { AnnotationData, useAnnotations } from "@/hooks/useAnnotations";
+import { useAnnotations } from "@/hooks/useAnnotations";
 import { Annotation } from "@shelfmates/db";
 import {
   Breadcrumb,
@@ -60,12 +60,12 @@ export default function EbookReader({
   );
   const [tocChapters, setTocChapters] = useState<NavItem[]>([]);
 
-  const { currentProgress, saveProgress, isLoading } = useBookProgress(
-    session.id,
-  );
-  const { annotationsForUser, isUserAnnotationsLoading } = useAnnotations(
-    session.id,
-  );
+  const { currentProgress, saveProgress } = useBookProgress(session.id);
+  const {
+    annotationsForUser,
+    allAnnotations,
+    removeAnnotation,
+  } = useAnnotations(session.id);
 
   const debouncedSaveProgress = useDebounceCallback((cfi: string) => {
     saveProgress(cfi);
@@ -85,7 +85,7 @@ export default function EbookReader({
 
         renditionRef.current = book.renderTo(viewerRef.current, {
           width: "100%",
-          height: "600px",
+          height: "100vh",
           flow: "paginated",
           manager: "default",
           allowScriptedContent: true,
@@ -97,7 +97,6 @@ export default function EbookReader({
           setTocChapters(toc.toc);
         });
 
-        console.log("chapters", tocChapters);
         book.ready.then(() => {
           renditionRef?.current?.on("keydown", handleKeyDown);
         });
@@ -123,33 +122,68 @@ export default function EbookReader({
     if (!renditionRef.current) return;
 
     renditionRef.current.on("markClicked", (cfiRange, data) => {
-      const annotation = annotationsForUser?.find(
-        (a) => a.cfiRange === cfiRange,
-      );
-      if (annotation && annotation.type === "NOTE") {
-        console.log("found note type annotation!");
-        setEditingAnnotation(annotation);
+      const annotation = allAnnotations?.find((a) => a.cfiRange === cfiRange);
+      if (annotation) {
+        if (annotation.profileId === session.currentUserProfileId) {
+          // It's the current user's annotation, so we can either edit or remove it
+          if (annotation.type === "NOTE") {
+            setEditingAnnotation(annotation);
+          } else {
+            // It's a highlight, so we can remove it.
+            // You may want a confirmation dialog here
+            removeAnnotation(annotation.id);
+          }
+        } else {
+          // It's another user's annotation, maybe show their details?
+          console.log("Clicked on another user's annotation", annotation);
+        }
       }
     });
-  }, [annotationsForUser]);
+  }, [allAnnotations, session.currentUserProfileId, removeAnnotation]);
 
   useEffect(() => {
-    if (!renditionRef.current) return;
+    if (!rendition || !allAnnotations) return;
 
-    annotationsForUser?.forEach((annotation) => {
-      rendition?.annotations.add(
-        "highlight",
-        annotation.cfiRange,
-        undefined,
-        undefined,
-        undefined,
-        { fill: "yellow", "fill-opacity": "0.5" },
-      );
+    // Clear existing annotations before adding new ones
+    // rendition.annotations.each((annotation) => rendition.annotations.remove());
+
+    allAnnotations.forEach((annotation) => {
+      const isCurrentUser = annotation.profileId === session.currentUserProfileId;
+
+      if (annotation.type === "HIGHLIGHT") {
+        rendition.annotations.add(
+          "highlight",
+          annotation.cfiRange,
+          {},
+          (e) => console.log("clicked highlight", e),
+          "hl",
+          isCurrentUser
+            ? {
+                fill: annotation.color?.toLowerCase() ?? "yellow",
+                "fill-opacity": "0.5",
+              }
+            : {
+                "text-decoration": "underline",
+              },
+        );
+      } else if (annotation.type === "NOTE" && !isCurrentUser) {
+        // Underline public annotations from other users
+        rendition.annotations.add(
+          "underline",
+          annotation.cfiRange,
+          {},
+          (e) => console.log("clicked note", e),
+          "ul",
+          {
+            "text-decoration": "underline",
+            color: "gray",
+          },
+        );
+      }
     });
-  }, [annotationsForUser, rendition]);
+  }, [allAnnotations, rendition, session.currentUserProfileId]);
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    console.log("KEY HIT", e.key);
     if (!renditionRef.current) return;
 
     if (e.key === "ArrowRight") {
@@ -172,7 +206,7 @@ export default function EbookReader({
   useEventListener("keydown", handleKeyDown);
 
   return (
-    <div className="w-full flex-col">
+    <div className="flex h-full w-full flex-col">
       <div className="">
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
@@ -186,41 +220,42 @@ export default function EbookReader({
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <div className="w-full flex">
-        <div className="toc-pane">
-          {tocChapters.length ? (
-            tocChapters.map((chapter) => (
-              <div
-                className="text-blue-500 cursor-pointer"
-                key={chapter.id}
-                onClick={() => {
-                  if (!renditionRef.current) return;
-                  renditionRef.current.display(chapter.href);
-                }}
-              >
-                {chapter.label}
-              </div>
-            ))
-          ) : (
-            <div className="col-span-4 text-center">No chapters available</div>
-          )}
+      <div className="flex w-full flex-1">
+        <div className="w-1/6 overflow-y-auto pr-4">
+          <div className="toc-pane">
+            {tocChapters.length ? (
+              tocChapters.map((chapter) => (
+                <div
+                  className="cursor-pointer text-blue-500"
+                  key={chapter.id}
+                  onClick={() => {
+                    if (!renditionRef.current) return;
+                    renditionRef.current.display(chapter.href);
+                  }}
+                >
+                  {chapter.label}
+                </div>
+              ))
+            ) : (
+              <div className="col-span-4 text-center">No chapters available</div>
+            )}
+          </div>
         </div>
-        <div className="bg-red-500">
-          <ChevronLeft onClick={handleLeftClick} />
-        </div>
-        <div className="pane w-full max-w-full overflow-auto bg-blue-500">
-          <div tabIndex={0} id="viewer" className="" ref={viewerRef}></div>
-          <TextSelectionMenuRenderer
-            rendition={renditionRef}
-            sessionId={session.id}
-            editingAnnotation={editingAnnotation}
-            setEditingAnnotation={setEditingAnnotation}
-          />
-        </div>
-        <div className="bg-red-500">
-          <ChevronRight onClick={handleRightClick} />
+        <div className="flex w-5/6 items-center justify-center">
+          <ChevronLeft onClick={handleLeftClick} className="cursor-pointer" />
+          <div className="pane w-full max-w-full overflow-auto">
+            <div tabIndex={0} id="viewer" className="" ref={viewerRef}></div>
+            <TextSelectionMenuRenderer
+              rendition={renditionRef}
+              sessionId={session.id}
+              editingAnnotation={editingAnnotation}
+              setEditingAnnotation={setEditingAnnotation}
+            />
+          </div>
+          <ChevronRight onClick={handleRightClick} className="cursor-pointer" />
         </div>
       </div>
     </div>
   );
 }
+

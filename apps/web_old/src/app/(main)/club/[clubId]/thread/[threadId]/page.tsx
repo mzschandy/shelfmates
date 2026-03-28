@@ -24,7 +24,6 @@ export default async function ThreadPage({
   const { threadId } = await params;
 
   const thread = await getThreadById(threadId);
-  console.log("thread", thread);
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">

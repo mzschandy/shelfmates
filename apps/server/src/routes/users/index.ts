@@ -15,6 +15,7 @@ const usersRouter = app
       error,
     } = await supabase.auth.getUser();
 
+    console.log('supabase user data', user)
     const profile = await prisma.profile.findUnique({
       where: {
         id: user?.id,

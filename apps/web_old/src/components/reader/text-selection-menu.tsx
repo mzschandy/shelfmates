@@ -4,7 +4,6 @@ import {
   RefObject,
   SetStateAction,
   useCallback,
-  useEffect,
   useRef,
   useState,
 } from "react";
@@ -15,9 +14,17 @@ import {
   LayoutAnchorMode,
   LayoutAnchorPosition,
 } from "../context-view";
-import { AnnotationType, useAnnotations } from "@/hooks/useAnnotations";
+import {
+  AnnotationType,
+  HighlightColor,
+  useAnnotations,
+} from "@/hooks/useAnnotations";
 import { Textarea } from "../ui/textarea";
-import { $Enums, Annotation } from "@shelfmates/db";
+import { Annotation } from "@shelfmates/db";
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
 
 type TextSelectionOverlayProps = {
   show: boolean;
@@ -70,26 +77,18 @@ export default function TextSelectionMenuRenderer({
     rendition.current,
     renditionWindow,
   );
-  const {
-    saveAnnotation,
-    annotationsForUser,
-    isLoading,
-    isUserAnnotationsLoading,
-    updateAnnotation,
-  } = useAnnotations(sessionId);
+  const { saveAnnotation, annotationsForUser, updateAnnotation } =
+    useAnnotations(sessionId);
   const [isAnnotating, setIsAnnotating] = useState(false);
 
   if (selection === undefined && !editingAnnotation) {
     return;
   }
 
-  console.log("selection", selection);
-  console.log("existing annotations", annotationsForUser);
   const element = getRenditionView()?.[0].element as HTMLElement;
   const range = selection?.getRangeAt(0);
   if (!range && !editingAnnotation) return;
 
-  const boundingBoxRect = range?.getBoundingClientRect();
   const cons = range?.cloneContents();
   const text = cons?.textContent?.trim();
 
@@ -111,47 +110,61 @@ export default function TextSelectionMenuRenderer({
   };
 
   const rangeToCfi = () => {
+    if (!range) return;
     return getRenditionView()?.[0].contents.cfiFromRange(range);
   };
 
-  const onHighlight = () => {
+  const onHighlight = (color: HighlightColor) => {
     const cfiRange = rangeToCfi();
-    console.log("cfi", cfiRange);
-    rendition.current?.annotations.highlight(cfiRange, {}, (e) => {
-      console.log("highlight clicked", e.target);
-    });
+    if (!cfiRange) return;
+    rendition.current?.annotations.highlight(
+      cfiRange,
+      {},
+      (e) => {
+        console.log("highlight clicked", e.target);
+      },
+      "hl",
+      { fill: color.toLowerCase(), "fill-opacity": "0.5" },
+    );
     saveAnnotation({
       cfiRange,
       isPublic: true,
       type: AnnotationType.HIGHLIGHT,
+      color,
     });
   };
 
-  const onAnnotation = (noteText: string) => {
-    console.log('on annotation!')
+  const onAnnotation = (noteText: string, isPublic: boolean) => {
     const cfiRange = rangeToCfi();
-    console.log("cfi", cfiRange);
+    if (!cfiRange) return;
     rendition.current?.annotations.highlight(cfiRange, {}, (e) => {
       console.log("annotation clicked", e.target);
     });
     saveAnnotation({
       cfiRange,
-      isPublic: true,
+      isPublic,
       noteText,
       type: AnnotationType.NOTE,
     });
   };
 
-  const onUpdateAnnotation = (annotationId: string, noteText: string) => {
+  const onUpdateAnnotation = (
+    annotationId: string,
+    noteText: string,
+    isPublic: boolean,
+  ) => {
     updateAnnotation({
       annotationId,
       noteText,
-      type: AnnotationType.NOTE
+      isPublic,
+      type: AnnotationType.NOTE,
     });
   };
 
   const cfiCheck = rangeToCfi();
-  const existingAnnotation = annotationsForUser?.find((a) => a.cfiRange === cfiCheck);
+  const existingAnnotation = annotationsForUser?.find(
+    (a) => a.cfiRange === cfiCheck,
+  );
 
   if (!text) return;
 
@@ -170,7 +183,6 @@ export default function TextSelectionMenuRenderer({
           annotation={editingAnnotation ?? existingAnnotation}
           isAnnotating={isAnnotating}
           setIsAnnotating={setIsAnnotating}
-          rendition={rendition}
         />
       </TextSelectionOverlay>
     </>
@@ -182,25 +194,20 @@ type TextSelectionMenuProps = {
   anchorRect: DOMRect;
   containerRect: DOMRect;
   viewRect: DOMRect;
-  onHighlight: () => void;
-  onAnnotate: (noteText: string) => void;
-  onUpdateAnnotation: (annotationId: string, noteText: string) => void;
+  onHighlight: (color: HighlightColor) => void;
+  onAnnotate: (noteText: string, isPublic: boolean) => void;
+  onUpdateAnnotation: (
+    annotationId: string,
+    noteText: string,
+    isPublic: boolean,
+  ) => void;
   hide: () => void;
-  annotation: {
-    sessionId: string;
-    createdAt: string;
-    id: string;
-    isPublic: boolean | null;
-    profileId: string;
-    updatedAt: string | null;
-    type: $Enums.AnnotationType;
-    cfiRange: string;
-    noteText: string | null;
-} | undefined;
+  annotation: Annotation | undefined;
   isAnnotating: boolean;
   setIsAnnotating: React.Dispatch<SetStateAction<boolean>>;
-  rendition: RefObject<Rendition | null>
 };
+
+const HIGHLIGHT_COLORS = Object.values(HighlightColor);
 
 function TextSelectionMenu({
   anchorRect,
@@ -214,11 +221,12 @@ function TextSelectionMenu({
   annotation,
   isAnnotating,
   setIsAnnotating,
-  rendition
 }: TextSelectionMenuProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [width, setWidth] = useState(0);
   const [height, setHeight] = useState(0);
+  const [isPublic, setIsPublic] = useState(annotation?.isPublic ?? false);
+  const isMobile = useIsMobile();
 
   const endContainer = selection.range?.startContainer;
   const _lineHeight = endContainer
@@ -226,10 +234,9 @@ function TextSelectionMenu({
     : 0;
   // no custom line height and the origin is keyword, e.g. 'normal'.
   const lineHeight = isNaN(_lineHeight) ? anchorRect.height : _lineHeight * 1;
-  console.log('is existing annotation?', annotation)
 
-  const handleHighlight = () => {
-    onHighlight();
+  const handleHighlight = (color: HighlightColor) => {
+    onHighlight(color);
     hide();
   };
 
@@ -239,12 +246,67 @@ function TextSelectionMenu({
       return;
     }
     if (annotation) {
-      onUpdateAnnotation(annotation.id, text);
+      onUpdateAnnotation(annotation.id, text, isPublic);
     } else {
-      onAnnotate(text);
+      onAnnotate(text, isPublic);
     }
     setIsAnnotating(false);
     hide();
+  };
+
+  const menuContent = () => {
+    if (isAnnotating || (annotation && annotation.type === "NOTE")) {
+      return (
+        <div className="flex flex-col gap-2 rounded-lg border bg-background p-2 shadow-lg">
+          <div>
+            <Textarea
+              ref={ref}
+              defaultValue={annotation?.noteText ?? ""}
+              rows={isMobile ? 3 : 5}
+              className="w-full"
+              placeholder="Your annotation..."
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="is-public-annotation"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+              />
+              <Label htmlFor="is-public-annotation">Public</Label>
+            </div>
+            <Button onClick={handleAnnotation} size="sm">
+              Submit
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-1 rounded-lg border bg-background p-1 shadow-lg">
+        <div className="flex items-center gap-1 border-r pr-1">
+          {HIGHLIGHT_COLORS.map((color) => (
+            <Button
+              key={color}
+              onClick={() => handleHighlight(color)}
+              className={cn(
+                "h-7 w-7 rounded-full p-0",
+                `bg-${color.toLowerCase()}-500 hover:bg-${color.toLowerCase()}-600`,
+              )}
+            />
+          ))}
+        </div>
+        <Button
+          onClick={() => setIsAnnotating(true)}
+          variant="ghost"
+          className="h-8"
+        >
+          Annotate
+        </Button>
+      </div>
+    );
   };
 
   return (
@@ -254,7 +316,7 @@ function TextSelectionMenu({
         setWidth(el.clientWidth);
         setHeight(el.clientHeight);
       }}
-      className="mx-auto rounded-xl"
+      className="mx-auto"
       style={{
         position: "absolute",
         left: layout(containerRect.width, width, {
@@ -272,27 +334,7 @@ function TextSelectionMenu({
       }}
       tabIndex={-1}
     >
-      {isAnnotating || annotation ? (
-        <div className="bg-gray-500">
-          <div>
-            <Textarea ref={ref} defaultValue={annotation?.noteText ?? ''} />
-          </div>
-          <div>
-            <Button
-              onClick={() => {
-                handleAnnotation();
-              }}
-            >
-              Submit
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <Button onClick={handleHighlight}>Highlight</Button>
-          <Button onClick={() => setIsAnnotating(true)}>Annotate</Button>
-        </div>
-      )}
+      {menuContent()}
     </div>
   );
 }

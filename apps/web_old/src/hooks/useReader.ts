@@ -37,6 +37,7 @@ export interface Annotation {
 export interface SessionWithAnnotation {
   club: ({ clubMembers: ClubMember[] } & Club) | null;
   annotation: Annotation[];
+  currentUserProfileId: string;
 }
 
 export type ReaderSessionData = {

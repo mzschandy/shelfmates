@@ -17,6 +17,7 @@ const app = new Hono<Env>();
 export type ReaderEnv = Env & {
   Variables: Env['Variables'] & {
     session: ReaderSession;
+    profileId: string;
   };
 };
 
@@ -29,6 +30,7 @@ const protectedRouteMiddleware = createMiddleware<Env>(async (c, next) => {
   if (error) {
     return c.json({ error: 'User not logged in' }, 401);
   }
+  const currentUserProfileId = data.user.id;
 
   const session: ReaderSession = await prisma.session.findUnique({
     where: { id },
@@ -48,15 +50,15 @@ const protectedRouteMiddleware = createMiddleware<Env>(async (c, next) => {
   }
 
   const isUser = session.club?.clubMembers.find(
-    (member) => member.profileId === data.user.id,
+    (member) => member.profileId === currentUserProfileId,
   );
 
   if (!isUser) {
     return c.json({ error: 'User is not part of the club' }, 403);
   }
 
-  c.set('session', session);
-  c.set('profileId', data.user.id);
+  c.set('session', { ...session, currentUserProfileId });
+  c.set('profileId', currentUserProfileId);
   await next();
 });
 
@@ -70,15 +72,17 @@ export type ReaderSession = {
   book: Book | null;
   club: ({ clubMembers: ClubMember[] } & Club) | null;
   annotation: Annotation[];
+  currentUserProfileId: string;
 } | null;
 
 const annotationSchema = z.object({
-  cfiRange: z.string().optional(),
+  cfiRange: z.string(),
   isPublic: z.boolean().optional(),
   noteText: z.string().optional(),
   annotationId: z.string().optional(),
   type: z.enum(['HIGHLIGHT', 'NOTE']),
   sessionId: z.string(),
+  color: z.enum(['YELLOW', 'RED', 'BLUE', 'GREEN']).optional(),
 });
 
 const readerRouter = app
@@ -189,8 +193,15 @@ const readerRouter = app
     },
   )
   .post('/:id/annotations', zValidator('json', annotationSchema), async (c) => {
-    const { sessionId, cfiRange, isPublic, noteText, type, annotationId } =
-      c.req.valid('json');
+    const {
+      sessionId,
+      cfiRange,
+      isPublic,
+      noteText,
+      type,
+      annotationId,
+      color,
+    } = c.req.valid('json');
     const profileId = c.get('profileId');
     const existingAnnotation = await prisma.annotation.findFirst({
       where: {
@@ -210,6 +221,7 @@ const readerRouter = app
           data: {
             isPublic,
             cfiRange,
+            color,
           },
         });
       }
@@ -233,6 +245,7 @@ const readerRouter = app
             cfiRange,
             isPublic,
             type: 'HIGHLIGHT',
+            color,
           },
         });
       }
@@ -257,6 +270,31 @@ const readerRouter = app
     console.log('new annotation', newAnnotation);
 
     return c.json({ data: newAnnotation }, 201);
-  });
+  })
+  .delete(
+    '/:id/annotations/:annotationId',
+    zValidator(
+      'param',
+      z.object({ id: z.string(), annotationId: z.string() }),
+    ),
+    async (c) => {
+      const { annotationId } = c.req.valid('param');
+      const profileId = c.get('profileId');
+      const annotation = await prisma.annotation.findUnique({
+        where: { id: annotationId },
+      });
+      if (!annotation) {
+        return c.json({ error: 'Annotation not found' }, 404);
+      }
+      if (annotation.profileId !== profileId) {
+        return c.json(
+          { error: 'User is not authorized to delete this annotation' },
+          403,
+        );
+      }
+      await prisma.annotation.delete({ where: { id: annotationId } });
+      return c.json(null, 200);
+    },
+  );
 
 export default readerRouter;
