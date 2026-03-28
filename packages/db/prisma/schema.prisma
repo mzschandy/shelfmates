@@ -10,88 +10,83 @@ datasource db {
 }
 
 model Book {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId    String    @map("session_id") @db.Uuid
+  uploadedBy   String    @map("uploaded_by") @db.Uuid
   title        String
   author       String?
   description  String?
-  bookCoverUrl String?    @map("book_cover_url")
-  filePath     String?    @map("file_path")
-  rating       Float?     @db.Real
-  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sessionId    String     @map("session_id") @db.Uuid
-  uploadedBy   String     @map("uploaded_by") @db.Uuid
-  clubId       String     @map("club_id") @db.Uuid
-  club         Club       @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  session      Session    @relation("books_session_idTosessions", fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  clubMember   ClubMember @relation(fields: [uploadedBy, clubId], references: [id, clubId], onDelete: NoAction, onUpdate: NoAction)
-  sessions     Session[]  @relation("sessions_book_idTobooks")
+  bookCoverUrl String?   @map("book_cover_url")
+  filePath     String?   @map("file_path")
+  rating       Float?    @db.Real
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  session      Session   @relation("books_session_idTosessions", fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user         Profile   @relation(fields: [uploadedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("books")
 }
 
 model ClubMember {
-  isAdmin   Boolean   @default(false) @map("is_admin")
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  id        String    @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clubId    String    @map("club_id") @db.Uuid
-  profileId String    @map("profile_id") @db.Uuid
-  books     Book[]
-  comments  Comment[]
-  club      Club      @relation(fields: [clubId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  id        String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clubId    String   @map("club_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  isAdmin   Boolean  @default(false) @map("is_admin")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([id, clubId])
-  @@unique(fields: [profileId, clubId], name: "userByProfile")
+  @@unique(fields: [userId, clubId], name: "userByProfile")
   @@map("club_members")
 }
 
 model Club {
-  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  threadId       String[]     @map("thread_id") @db.Uuid
   title          String
   description    String?
   isPublic       Boolean      @default(false) @map("is_public")
   creatorId      String       @map("creator_id") @db.Uuid
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  threadId       String[]     @map("thread_id") @db.Uuid
-  books          Book[]
-  clubMembers    ClubMember[]
-  comments       Comment[]
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  slug           String       @unique
+  members        ClubMember[]
   sessions       Session[]
   threads        Thread[]
   creatorProfile Profile      @relation(fields: [creatorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubs_creator_id_fkey1")
 
+  @@index([slug])
   @@map("clubs")
 }
 
 model Comment {
-  commentText  String     @map("comment_text")
-  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime?  @default(now()) @map("updated_at") @db.Timestamp(6)
-  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clubMemberId String     @map("club_member_id") @db.Uuid
-  sessionId    String?    @map("session_id") @db.Uuid
-  threadId     String     @map("thread_id") @db.Uuid
-  parentId     String?    @map("parent_id") @db.Uuid
-  depth        Int        @default(0)
-  clubId       String     @map("club_id") @db.Uuid
-  club         Club       @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  clubMember   ClubMember @relation(fields: [clubMemberId, clubId], references: [id, clubId], onDelete: NoAction, onUpdate: NoAction)
-  session      Session?   @relation(fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  thread       Thread     @relation(fields: [threadId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_thread_id")
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  sessionId   String   @map("session_id") @db.Uuid
+  threadId    String    @map("thread_id") @db.Uuid
+  parentId    String?   @map("parent_id") @db.Uuid
+  depth       Int       @default(0)
+  commentText String    @map("comment_text")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+  user        Profile   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  thread      Thread    @relation(fields: [threadId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_thread_id")
 
   @@map("comments")
 }
 
 model Profile {
-  username           String?               @unique
-  avatarUrl          String?               @map("avatar_url")
-  id                 String                @id @db.Uuid
-  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  email              String?               @db.VarChar
-  clubMembers        ClubMember[]
-  clubs              Club[]
-  userReadingSession UserSessionProgress[] @relation(map: "fk_profile_id")
-  annotation         Annotation[]          @relation(map: "fk_profile_id")
+  username            String?               @unique
+  avatarUrl           String?               @map("avatar_url")
+  id                  String                @id @db.Uuid
+  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  email               String?               @db.VarChar
+  clubMembers         ClubMember[]
+  clubs               Club[]
+  userReadingSessions UserSessionProgress[] @relation(map: "fk_profile_id")
+  annotations         Annotation[]          @relation(map: "fk_profile_id")
+  books               Book[]
+  comments            Comment[]
 
   @@map("profiles")
 }
@@ -105,8 +100,7 @@ model Session {
   clubId             String                @map("club_id") @db.Uuid
   comments           Comment[]
   threads            Thread[]
-  books              Book[]                @relation("books_session_idTosessions")
-  book               Book?                 @relation("sessions_book_idTobooks", fields: [bookId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  book               Book                  @relation("sessions_book_idTobooks", fields: [bookId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   club               Club                  @relation(fields: [clubId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   userReadingSession UserSessionProgress[] @relation(map: "fk_session_id")
   annotation         Annotation[]          @relation(map: "fk_session_id")
@@ -119,13 +113,13 @@ model Thread {
   title       String     @db.VarChar
   description String?    @db.VarChar
   isLocked    Boolean?   @default(false) @map("is_locked")
-  clubId      String?    @map("club_id") @db.Uuid
+  clubId      String     @map("club_id") @db.Uuid
   sessionId   String?    @map("session_id") @db.Uuid
   type        ThreadType
   createdAt   DateTime?  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime?  @default(now()) @map("updated_at") @db.Timestamptz(6)
   comments    Comment[]
-  club        Club?      @relation(fields: [clubId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_club_id")
+  club        Club       @relation(fields: [clubId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_club_id")
   session     Session?   @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_session_id")
 
   @@map("threads")
@@ -140,20 +134,20 @@ enum ThreadType {
 
 model UserSessionProgress {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  profileId String   @map("profile_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
   sessionId String   @map("session_id") @db.Uuid
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
   lastCFI   String   @map("last_cfi")
-  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_id")
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_id")
   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_session_id")
 
-  @@unique([profileId, sessionId])
+  @@unique([userId, sessionId])
   @@map("user_session_progress")
 }
 
 model Annotation {
   id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  profileId String          @map("profile_id") @db.Uuid
+  userId    String          @map("user_id") @db.Uuid
   sessionId String          @map("session_id") @db.Uuid
   cfiRange  String          @map("cfi_range")
   isPublic  Boolean?        @default(false) @map("is_public")
@@ -162,7 +156,7 @@ model Annotation {
   updatedAt DateTime?       @default(now()) @map("updated_at") @db.Timestamptz(6)
   type      AnnotationType
   color     HighlightColor?
-  profile   Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_id")
+  user      Profile         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_id")
   session   Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_session_id")
 
   @@map("annotations")
@@ -183,4 +177,3 @@ enum HighlightColor {
 
   @@map("highlightColor")
 }
-
